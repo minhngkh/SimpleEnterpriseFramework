@@ -1,20 +1,22 @@
-using System.Text.Json.Serialization;
+using HandlebarsDotNet;
+using System.IO;
 
 var builder = WebApplication.CreateSlimBuilder(args);
 
-builder.Services.ConfigureHttpJsonOptions(options =>
-{
-    // options.SerializerOptions.TypeInfoResolverChain.Insert(0, AppJsonSerializerContext.Default);
-});
-
 var app = builder.Build();
 
+// Load and compile the Handlebars template
+var templatePath = Path.Combine(Directory.GetCurrentDirectory(), "Templates", "index.hbs");
+var templateContent = await File.ReadAllTextAsync(templatePath);
+var template = Handlebars.Compile(templateContent);
 
-app.MapGet("/", () => 
-@"
-<body>
-<h1>Hello world2222</h1>
-</body>
-");
+// Data for the template
+var data = new
+{
+    title = "Hello world!",
+    message = "Welcome to Handlebars in ASP.NET!"
+};
+
+app.MapGet("/", () => template(data));
 
 app.Run();
