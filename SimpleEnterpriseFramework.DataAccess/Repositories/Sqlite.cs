@@ -5,64 +5,12 @@ using System.Reflection;
 using System.Diagnostics;
 
 static class Utils {
-    public static (string, object)[] GetPairs(dynamic conditions) {
+    public static (string, object)[] GetPairs(object conditions) {
         Type type = conditions.GetType();
         return type.GetProperties()
-            .Select((PropertyInfo p) => (p.Name, p.GetValue(conditions)))
+            .Select((PropertyInfo p) => (p.Name, p.GetValue(conditions)!))
             .Where(val => val.Item2 != null)
             .ToArray();
-    }
-}
-
-public class SqliteUpdateCommandBuilder: IUpdateCommandBuilder {
-    string? table, condition, updateStatement;
-    SqliteCommand command;
-
-    public SqliteUpdateCommandBuilder(SqliteCommand command) {
-        this.command = command;
-    }
-
-    public IUpdateCommandBuilder SetTable(string table) {
-        this.table = $"UPDATE {table}";
-        return this;
-    }
-
-    public IUpdateCommandBuilder SetCondition(dynamic conditions) {
-        StringBuilder builder = new();
-        (string, object)[] conditionPairs = Utils.GetPairs(conditions);
-        for (int i = 0; i < conditionPairs.Length; i++) {
-            var (field, val) = conditionPairs[i];
-            if (i > 0) builder.Append(" AND ");
-            builder.Append($"{field} = @cond{i}");
-            command.Parameters.AddWithValue($"@cond{i}", val);
-        }
-        this.condition = $"WHERE {builder.ToString()}";
-        return this;
-    }
-
-    public IUpdateCommandBuilder SetUpdateStatement(dynamic updates) {
-        StringBuilder builder = new();
-        (string, object)[] updatePairs = Utils.GetPairs(updates);
-        for (int i = 0; i < updatePairs.Length; i++) {
-            var (field, val) = updatePairs[i];
-            if (i > 0) builder.Append(" , ");
-            builder.Append($"{field} = @val{i}");
-            command.Parameters.AddWithValue($"@val{i}", val);
-        }
-        this.updateStatement = $"SET {builder.ToString()}";
-        return this;
-    }
-
-    public void Update() {
-        Debug.Assert(table != null && table != "", "Must call SetTable.");
-        Debug.Assert(updateStatement != null && updateStatement != "", "Must call SetUpdateStatement.");
-        command.CommandText = $"{table} {updateStatement} {condition??""};";
-        Debug.WriteLine(command.CommandText);
-        command.ExecuteNonQuery();
-    }
-
-    public void Dispose() {
-        command.Dispose();
     }
 }
 
@@ -177,7 +125,7 @@ public class SqliteRepository: IRepository {
         }
     }
 
-    public void DeleteRow(string table, dynamic conditions) {
+    public void DeleteRow(string table, object conditions) {
         StringBuilder commandBuilder = new();
         using (SqliteCommand command = connection.CreateCommand()) {
             commandBuilder.Append($"DELETE FROM {table} WHERE ");
@@ -197,17 +145,43 @@ public class SqliteRepository: IRepository {
 
     public void UpdateRow(string table, string condition, string updateStatement) {
         using (SqliteCommand command = connection.CreateCommand()) {
-            command.CommandText = $"UPDATE TABLE {table} WHERE {condition} SET {updateStatement};";
+            command.CommandText = $"UPDATE {table} SET {updateStatement} WHERE {condition}";
             command.ExecuteNonQuery();
         }
     }
 
-    public IUpdateCommandBuilder UpdateRowBuilder() {
-        SqliteCommand command = connection.CreateCommand();
-        return new SqliteUpdateCommandBuilder(command);
+    public void UpdateRow(string table, object? conditions, object updates) {
+        StringBuilder commandBuilder = new();
+        using (SqliteCommand command = connection.CreateCommand()) {
+            commandBuilder.Append($"UPDATE {table}");
+
+            (string, object)[] updatePairs = Utils.GetPairs(updates);
+            Debug.Assert(updatePairs.Length > 0);
+
+            commandBuilder.Append(" SET ")
+                          .AppendJoin(", ", updatePairs.Select((item, index) => $"{item.Item1} = @val{index}"));
+            for (int i = 0; i < updatePairs.Length; i++) {
+                command.Parameters.AddWithValue($"@val{i}", updatePairs[i].Item2);
+            }
+
+            if (conditions != null) {
+                (string, object)[] conditionPairs = Utils.GetPairs(conditions);
+                if (conditionPairs.Length > 0) {
+                    commandBuilder.Append(" WHERE ")
+                                  .AppendJoin(" AND ", conditionPairs.Select((item, index) => $"{item.Item1} = @cond{index}"));
+                    for (int i = 0; i < conditionPairs.Length; i++) {
+                        command.Parameters.AddWithValue($"@cond{i}", conditionPairs[i].Item2);
+                    }
+                }
+            }
+
+            command.CommandText = commandBuilder.ToString();
+            Debug.WriteLine(command.CommandText);
+            command.ExecuteNonQuery();
+        }
     }
 
-    public void Add(string table, dynamic values) {
+    public void Add(string table, object values) {
         StringBuilder fieldBuilder = new();
         StringBuilder valueBuilder = new();
         (string, object)[] valuePairs = Utils.GetPairs(values);
@@ -272,19 +246,19 @@ public class SqliteRepository: IRepository {
         }
     }
 
-    public List<object[]> Find(string table, dynamic? conditions = null) {
+    public List<object[]> Find(string table, object? conditions = null) {
         List<Object[]> result = new();
         StringBuilder commandBuilder = new();
         using (SqliteCommand command = connection.CreateCommand()) {
             commandBuilder.Append($"SELECT * FROM {table} ");
             if (conditions != null) {
                 (string, object)[] conditionPairs = Utils.GetPairs(conditions);
-                if (conditionPairs.Length > 0) commandBuilder.Append("WHERE ");
-                for (int i = 0; i < conditionPairs.Length; i++) {
-                    var (field, val) = conditionPairs[i];
-                    if (i > 0) commandBuilder.Append("AND ");
-                    commandBuilder.Append($"{field} = @val{i} ");
-                    command.Parameters.AddWithValue($"@val{i}", val);
+                if (conditionPairs.Length > 0) {
+                    commandBuilder.Append(" WHERE ")
+                                  .AppendJoin(" AND ", conditionPairs.Select((item, index) => $"{item.Item1} = @cond{index}"));
+                    for (int i = 0; i < conditionPairs.Length; i++) {
+                        command.Parameters.AddWithValue($"@cond{i}", conditionPairs[i].Item2);
+                    }
                 }
             }
             Debug.WriteLine(commandBuilder.ToString());
@@ -301,7 +275,7 @@ public class SqliteRepository: IRepository {
         return result;
     }
 
-    public List<T> Find<T>(dynamic? conditions = null) where T: struct {
+    public List<T> Find<T>(object? conditions = null) where T: struct {
         List<T> result = new();
         StringBuilder commandBuilder = new();
         using (SqliteCommand command = connection.CreateCommand()) {
@@ -330,19 +304,17 @@ public class SqliteRepository: IRepository {
         return result;
     }
 
-    public object[]? FindOne(string table, dynamic conditions) {
+    public object[]? FindOne(string table, object conditions) {
         object[]? result = null;
         StringBuilder commandBuilder = new();
         using (SqliteCommand command = connection.CreateCommand()) {
             commandBuilder.Append($"SELECT * FROM {table} ");
             (string, object)[] conditionPairs = Utils.GetPairs(conditions);
             if (conditionPairs.Length > 0) {
-                commandBuilder.Append("WHERE ");
+                commandBuilder.Append(" WHERE ")
+                              .AppendJoin(" AND ", conditionPairs.Select((item, index) => $"{item.Item1} = @cond{index}"));
                 for (int i = 0; i < conditionPairs.Length; i++) {
-                    var (field, val) = conditionPairs[i];
-                    if (i > 0) commandBuilder.Append("AND ");
-                    commandBuilder.Append($"{field} = @val{i} ");
-                    command.Parameters.AddWithValue($"@val{i}", val);
+                    command.Parameters.AddWithValue($"@cond{i}", conditionPairs[i].Item2);
                 }
             }
             Debug.WriteLine(commandBuilder.ToString());
@@ -362,19 +334,17 @@ public class SqliteRepository: IRepository {
         return result;
     }
 
-    public T? FindOne<T>(dynamic conditions) where T: struct {
+    public T? FindOne<T>(object conditions) where T: struct {
         T? result = null;
         StringBuilder commandBuilder = new();
         using (SqliteCommand command = connection.CreateCommand()) {
             commandBuilder.Append($"SELECT * FROM {typeof(T).Name} ");
             (string, object)[] conditionPairs = Utils.GetPairs(conditions);
             if (conditionPairs.Length > 0) {
-                commandBuilder.Append("WHERE ");
+                commandBuilder.Append(" WHERE ")
+                    .AppendJoin(" AND ", conditionPairs.Select((item, index) => $"{item.Item1} = @cond{index}"));
                 for (int i = 0; i < conditionPairs.Length; i++) {
-                    var (field, val) = conditionPairs[i];
-                    if (i > 0) commandBuilder.Append("AND ");
-                    commandBuilder.Append($"{field} = @val{i} ");
-                    command.Parameters.AddWithValue($"@val{i}", val);
+                    command.Parameters.AddWithValue($"@cond{i}", conditionPairs[i].Item2);
                 }
             }
             Debug.WriteLine(commandBuilder.ToString());
