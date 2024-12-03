@@ -20,7 +20,7 @@ struct User {
     public int RoleId;
 }
 
-class TestSqlite {
+class SqliteExample {
     public static void Main(string[] args) {
         SqliteRepository repo = new("Data Source=test.db");
 
@@ -34,6 +34,21 @@ class TestSqlite {
         repo.Add(new Role() {
             Id = 1,
             Name = "user",
+        });
+        repo.Add(new Role() {
+            Id = 2,
+            Name = "guest",
+        });
+
+
+        Console.WriteLine("\nAll Roles");
+        foreach (Role r in repo.Find<Role>()) {
+            Console.WriteLine($"Id = {r.Id}, Name = {r.Name}");
+        }
+
+        Console.WriteLine("\nDelete Role Id = 2");
+        repo.DeleteRow("Role", new {
+            Id = 2,
         });
 
         Console.WriteLine("\nAll Roles");
@@ -74,25 +89,13 @@ class TestSqlite {
         }
 
         Console.WriteLine("\nFind Id = 123");
-        List<User> users = repo.Find<User>("Id = 123");
-        foreach (User usr in users) {
-            Console.WriteLine($"Id = {usr.Id}, Username = {usr.Username}, Password = {usr.Password}");
-        }
-
-        Console.WriteLine("\nFind Id = 123");
-        users = repo.Find<User>("Id = 123");
-        foreach (User usr in users) {
-            Console.WriteLine($"Id = {usr.Id}, Username = {usr.Username}, Password = {usr.Password}");
-        }
-
-        Console.WriteLine("\nFind Id = 123");
-        users = repo.Find<User>(("Id", 123));
+        List<User> users = repo.Find<User>(new {Id = 123});
         foreach (User usr in users) {
             Console.WriteLine($"Id = {usr.Id}, Username = {usr.Username}, Password = {usr.Password}");
         }
 
         Console.WriteLine("\nFindOne Id = 124");
-        object[]? result = repo.FindOne("User", ("Id", 124));
+        object[]? result = repo.FindOne("User", new {Id = 124});
         if (result != null) {
             foreach (object col in result ) {
                 Console.Write($"{col.ToString()}   ");
@@ -103,18 +106,18 @@ class TestSqlite {
         }
 
         Console.WriteLine("\nFindOne Id = 123");
-        User? user = repo.FindOne<User>(("Id", 123));
+        User? user = repo.FindOne<User>(new {Id = 123});
         Console.WriteLine($"Id = {user?.Id}, Username = {user?.Username}, Password = {user?.Password}");
 
         Console.WriteLine("\nUpdate Id = 125 -> 124");
         repo.UpdateRowBuilder()
             .SetTable("User")
-            .SetCondition(("Id", 125))
-            .SetUpdateStatement(("Id", 124))
+            .SetCondition(new {Id = 125})
+            .SetUpdateStatement(new {Id = 124})
             .Update();
 
         Console.WriteLine("\nFindOne Id = 124");
-        user = repo.FindOne<User>(("Id", 124));
+        user = repo.FindOne<User>(new {Id = 124});
         if (user is not null) {
             Console.WriteLine($"Id = {user?.Id}, Username = {user?.Username}, Password = {user?.Password}");
         } else {

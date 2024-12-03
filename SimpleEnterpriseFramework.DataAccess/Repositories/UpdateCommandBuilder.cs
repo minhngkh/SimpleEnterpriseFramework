@@ -1,6 +1,6 @@
 public interface IUpdateCommandBuilder: IDisposable {
     public abstract IUpdateCommandBuilder SetTable(string table);
-    public abstract IUpdateCommandBuilder SetCondition(params (string, object)[] andConditions);
-    public abstract IUpdateCommandBuilder SetUpdateStatement(params (string, object)[] fieldAndValues);
+    public abstract IUpdateCommandBuilder SetCondition(dynamic conditions);
+    public abstract IUpdateCommandBuilder SetUpdateStatement(dynamic updates);
     public abstract void Update();
 }

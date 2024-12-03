@@ -4,6 +4,15 @@ using System.Data.Common;
 using System.Reflection;
 using System.Diagnostics;
 
+static class Utils {
+    public static (string, object)[] GetPairs(dynamic conditions) {
+        Type type = conditions.GetType();
+        return type.GetProperties()
+            .Select((PropertyInfo p) => (p.Name, p.GetValue(conditions)))
+            .ToArray();
+    }
+}
+
 public class SqliteUpdateCommandBuilder: IUpdateCommandBuilder {
     string? table, condition, updateStatement;
     SqliteCommand command;
@@ -17,10 +26,11 @@ public class SqliteUpdateCommandBuilder: IUpdateCommandBuilder {
         return this;
     }
 
-    public IUpdateCommandBuilder SetCondition(params (string, object)[] andConditions) {
+    public IUpdateCommandBuilder SetCondition(dynamic conditions) {
         StringBuilder builder = new();
-        for (int i = 0; i < andConditions.Length; i++) {
-            var (field, val) = andConditions[i];
+        (string, object)[] conditionPairs = Utils.GetPairs(conditions);
+        for (int i = 0; i < conditionPairs.Length; i++) {
+            var (field, val) = conditionPairs[i];
             if (i > 0) builder.Append(" AND ");
             builder.Append($"{field} = @cond{i}");
             command.Parameters.AddWithValue($"@cond{i}", val);
@@ -29,10 +39,11 @@ public class SqliteUpdateCommandBuilder: IUpdateCommandBuilder {
         return this;
     }
 
-    public IUpdateCommandBuilder SetUpdateStatement(params (string, object)[] updateStatement) {
+    public IUpdateCommandBuilder SetUpdateStatement(dynamic updates) {
         StringBuilder builder = new();
-        for (int i = 0; i < updateStatement.Length; i++) {
-            var (field, val) = updateStatement[i];
+        (string, object)[] updatePairs = Utils.GetPairs(updates);
+        for (int i = 0; i < updatePairs.Length; i++) {
+            var (field, val) = updatePairs[i];
             if (i > 0) builder.Append(" , ");
             builder.Append($"{field} = @val{i}");
             command.Parameters.AddWithValue($"@val{i}", val);
@@ -42,7 +53,9 @@ public class SqliteUpdateCommandBuilder: IUpdateCommandBuilder {
     }
 
     public void Update() {
-        command.CommandText = $"{table} {updateStatement} {condition};";
+        Debug.Assert(table != null && table != "", "Must call SetTable.");
+        Debug.Assert(updateStatement != null && updateStatement != "", "Must call SetUpdateStatement.");
+        command.CommandText = $"{table} {updateStatement} {condition??""};";
         Debug.WriteLine(command.CommandText);
         command.ExecuteNonQuery();
     }
@@ -118,9 +131,11 @@ public class SqliteRepository: IRepository {
         StringBuilder commandBuilder = new();
 
         commandBuilder.AppendLine($"CREATE TABLE {typeof(T).Name} (");
-        MemberInfo[] fields = typeof(T).GetFields(BindingFlags.Instance |
+        FieldInfo[] fields = typeof(T).GetFields(BindingFlags.Instance |
                                                   BindingFlags.Public |
-                                                  BindingFlags.DeclaredOnly);
+                                                  BindingFlags.DeclaredOnly)
+                                       .Where(field => Attribute.GetCustomAttribute(field, typeof (DbFieldAttribute)) != null)
+                                       .ToArray();
         if (fields.Length == 0) return;
 
         using (SqliteCommand command = connection.CreateCommand()) {
@@ -128,26 +143,20 @@ public class SqliteRepository: IRepository {
                 command.CommandText = $"DROP TABLE IF EXISTS {typeof(T).Name}";
                 command.ExecuteNonQuery();
             }
-            for (int i = 0; i < fields.Length; i++) {
-                MemberInfo mem = fields[i];
-
-                DbFieldAttribute? dbAttr = (DbFieldAttribute?)Attribute.GetCustomAttribute(mem, typeof (DbFieldAttribute));
-                if (dbAttr == null) {
-                    throw new Exception($"Invalid model type {typeof(T).FullName}");
-                } else {
-                    if (dbAttr.IsKey) {
-                        if (!primaryKeyFound) primaryKeyFound = true;
-                        else throw new Exception($"Model '{typeof(T).Name}' attempted to declare more than 1 primary key.");
-                    }
-                    string uniqueStr = dbAttr.Unique ? "UNIQUE" : "";
-                    string nullalbleStr = dbAttr.Nullable ? "" : "NOT NULL";
-                    string key = dbAttr.IsKey ? "PRIMARY KEY" : "";
-
-                    if (dbAttr.ForeignConstraint != null) {
-                        foreignConstraintBuilder.AppendLine($"    FOREIGN KEY({mem.Name}) REFERENCES {dbAttr.ForeignConstraint?.Item1}({dbAttr.ForeignConstraint?.Item2}),");
-                    }
-                    commandBuilder.AppendLine($"    {mem.Name} {dbAttr.Type} {uniqueStr} {key} {nullalbleStr},");
+            foreach (FieldInfo mem in fields) {
+                DbFieldAttribute dbAttr = (DbFieldAttribute)Attribute.GetCustomAttribute(mem, typeof (DbFieldAttribute))!;
+                if (dbAttr.IsKey) {
+                    if (!primaryKeyFound) primaryKeyFound = true;
+                    else throw new Exception($"Model '{typeof(T).Name}' attempted to declare more than 1 primary key.");
                 }
+                string uniqueStr = dbAttr.Unique ? "UNIQUE" : "";
+                string nullalbleStr = dbAttr.Nullable ? "" : "NOT NULL";
+                string key = dbAttr.IsKey ? "PRIMARY KEY" : "";
+
+                if (dbAttr.ForeignConstraint != null) {
+                    foreignConstraintBuilder.AppendLine($"    FOREIGN KEY({mem.Name}) REFERENCES {dbAttr.ForeignConstraint?.Item1}({dbAttr.ForeignConstraint?.Item2}),");
+                }
+                commandBuilder.AppendLine($"    {mem.Name} {dbAttr.Type} {uniqueStr} {key} {nullalbleStr},");
             }
             if (foreignConstraintBuilder.Length > 0) {
                 commandBuilder.Append(foreignConstraintBuilder.ToString());
@@ -167,12 +176,13 @@ public class SqliteRepository: IRepository {
         }
     }
 
-    public void DeleteRow(string table, params (string, object)[] andConditions) {
+    public void DeleteRow(string table, dynamic conditions) {
         StringBuilder commandBuilder = new();
         using (SqliteCommand command = connection.CreateCommand()) {
             commandBuilder.Append($"DELETE FROM {table} WHERE ");
-            for (int i = 0; i < andConditions.Length; i++) {
-                var (field, val) = andConditions[i];
+            (string, object)[] conditionPairs = Utils.GetPairs(conditions);
+            for (int i = 0; i < conditionPairs.Length; i++) {
+                var (field, val) = conditionPairs[i];
 
                 if (i > 0) commandBuilder.Append(" AND ");
                 commandBuilder.Append($"{field} = @val{i}");
@@ -196,12 +206,13 @@ public class SqliteRepository: IRepository {
         return new SqliteUpdateCommandBuilder(command);
     }
 
-    public void Add(string table, params (string, object)[] values) {
+    public void Add(string table, dynamic values) {
         StringBuilder fieldBuilder = new();
         StringBuilder valueBuilder = new();
+        (string, object)[] valuePairs = Utils.GetPairs(values);
         using (SqliteCommand command = connection.CreateCommand()) {
-            for (int i = 0; i < values.Length; i++) {
-                var (field, val) = values[i];
+            for (int i = 0; i < valuePairs.Length; i++) {
+                var (field, val) = valuePairs[i];
                 if (i > 0) fieldBuilder.Append(", ");
                 fieldBuilder.Append(field);
 
@@ -219,25 +230,23 @@ public class SqliteRepository: IRepository {
     public void Add<T>(T obj) {
         FieldInfo[] fields = typeof(T).GetFields(BindingFlags.Instance |
                                                   BindingFlags.Public |
-                                                  BindingFlags.DeclaredOnly);
+                                                  BindingFlags.DeclaredOnly)
+                                      .Where(field => Attribute.GetCustomAttribute(field, typeof (DbFieldAttribute)) != null)
+                                      .ToArray();
         if (fields.Length == 0) return;
         StringBuilder fieldBuilder = new();
         StringBuilder valueBuilder = new();
         using (SqliteCommand command = connection.CreateCommand()) {
             for (int i = 0; i < fields.Length; i++) {
                 FieldInfo field = fields[i];
+                object? val = field.GetValue(obj);
 
-                DbFieldAttribute? dbAttr = (DbFieldAttribute?)Attribute.GetCustomAttribute(field, typeof (DbFieldAttribute));
-                if (dbAttr != null) {
-                    object? val = field.GetValue(obj);
+                if (i > 0) fieldBuilder.Append(", ");
+                fieldBuilder.Append(field.Name);
 
-                    if (i > 0) fieldBuilder.Append(", ");
-                    fieldBuilder.Append(field.Name);
-
-                    if (i > 0) valueBuilder.Append(", ");
-                    valueBuilder.Append($"@val{i}");
-                    command.Parameters.AddWithValue($"@val{i}", val);
-                }
+                if (i > 0) valueBuilder.Append(", ");
+                valueBuilder.Append($"@val{i}");
+                command.Parameters.AddWithValue($"@val{i}", val);
             }
             command.CommandText = $"INSERT INTO {typeof(T).Name}({fieldBuilder.ToString()}) VALUES({valueBuilder.ToString()});";
             Debug.WriteLine(command.CommandText);
@@ -261,61 +270,20 @@ public class SqliteRepository: IRepository {
         }
     }
 
-    public List<object[]> Find(string table, string? condition) {
-        List<Object[]> result = new();
-        using (SqliteCommand command = connection.CreateCommand()) {
-            command.CommandText = $"SELECT * FROM {table}";
-            if (condition != null) {
-                command.CommandText += $"WHERE {condition}";
-            }
-            command.CommandText += ";";
-
-            using (SqliteDataReader reader = command.ExecuteReader()) {
-                while (reader.Read()) {
-                    object[] row = new object[reader.FieldCount];
-                    Debug.Assert(reader.GetValues(row) == reader.FieldCount);
-                    result.Add(row);
-                }
-            }
-        }
-        return result;
-    }
-
-    public List<T> Find<T>(string? condition) where T: struct {
-        List<T> result = new();
-        using (SqliteCommand command = connection.CreateCommand()) {
-            command.CommandText = $"SELECT * FROM {typeof(T).Name} ";
-            if (condition != null) {
-                command.CommandText += $"WHERE {condition}";
-            }
-            command.CommandText += ";";
-            Debug.WriteLine(command.CommandText);
-
-            using (SqliteDataReader reader = command.ExecuteReader()) {
-                while (reader.Read()) {
-                    T obj = new();
-                    parseInto<T>(reader, ref obj);
-                    result.Add(obj);
-                }
-            }
-        }
-        return result;
-    }
-
-    public List<object[]> Find(string table, params (string, object)[] andConditions) {
+    public List<object[]> Find(string table, dynamic? conditions = null) {
         List<Object[]> result = new();
         StringBuilder commandBuilder = new();
         using (SqliteCommand command = connection.CreateCommand()) {
             commandBuilder.Append($"SELECT * FROM {table} ");
-            if (andConditions.Length > 0) {
-                commandBuilder.Append("WHERE ");
-                for (int i = 0; i < andConditions.Length; i++) {
-                    var (field, val) = andConditions[i];
+            if (conditions != null) {
+                (string, object)[] conditionPairs = Utils.GetPairs(conditions);
+                if (conditionPairs.Length > 0) commandBuilder.Append("WHERE ");
+                for (int i = 0; i < conditionPairs.Length; i++) {
+                    var (field, val) = conditionPairs[i];
                     if (i > 0) commandBuilder.Append("AND ");
                     commandBuilder.Append($"{field} = @val{i} ");
                     command.Parameters.AddWithValue($"@val{i}", val);
                 }
-                commandBuilder.Append(";");
             }
             Debug.WriteLine(commandBuilder.ToString());
             command.CommandText = commandBuilder.ToString();
@@ -331,20 +299,20 @@ public class SqliteRepository: IRepository {
         return result;
     }
 
-    public List<T> Find<T>(params (string, object)[] andConditions) where T: struct {
+    public List<T> Find<T>(dynamic? conditions = null) where T: struct {
         List<T> result = new();
         StringBuilder commandBuilder = new();
         using (SqliteCommand command = connection.CreateCommand()) {
             commandBuilder.Append($"SELECT * FROM {typeof(T).Name} ");
-            if (andConditions.Length > 0) {
-                commandBuilder.Append("WHERE ");
-                for (int i = 0; i < andConditions.Length; i++) {
-                    var (field, val) = andConditions[i];
+            if (conditions != null) {
+                (string, object)[] conditionPairs = Utils.GetPairs(conditions);
+                if (conditionPairs.Length > 0) commandBuilder.Append("WHERE ");
+                for (int i = 0; i < conditionPairs.Length; i++) {
+                    var (field, val) = conditionPairs[i];
                     if (i > 0) commandBuilder.Append("AND ");
                     commandBuilder.Append($"{field} = 123 ");
                     command.Parameters.AddWithValue($"@val{i}", val);
                 }
-                commandBuilder.Append(";");
             }
             command.CommandText = commandBuilder.ToString();
             Debug.WriteLine(command.CommandText);
@@ -360,20 +328,20 @@ public class SqliteRepository: IRepository {
         return result;
     }
 
-    public object[]? FindOne(string table, params (string, object)[] andConditions) {
+    public object[]? FindOne(string table, dynamic conditions) {
         object[]? result = null;
         StringBuilder commandBuilder = new();
         using (SqliteCommand command = connection.CreateCommand()) {
             commandBuilder.Append($"SELECT * FROM {table} ");
-            if (andConditions.Length > 0) {
+            (string, object)[] conditionPairs = Utils.GetPairs(conditions);
+            if (conditionPairs.Length > 0) {
                 commandBuilder.Append("WHERE ");
-                for (int i = 0; i < andConditions.Length; i++) {
-                    var (field, val) = andConditions[i];
+                for (int i = 0; i < conditionPairs.Length; i++) {
+                    var (field, val) = conditionPairs[i];
                     if (i > 0) commandBuilder.Append("AND ");
                     commandBuilder.Append($"{field} = @val{i} ");
                     command.Parameters.AddWithValue($"@val{i}", val);
                 }
-                commandBuilder.Append(";");
             }
             Debug.WriteLine(commandBuilder.ToString());
             command.CommandText = commandBuilder.ToString();
@@ -392,20 +360,20 @@ public class SqliteRepository: IRepository {
         return result;
     }
 
-    public T? FindOne<T>(params (string, object)[] andConditions) where T: struct {
+    public T? FindOne<T>(dynamic conditions) where T: struct {
         T? result = null;
         StringBuilder commandBuilder = new();
         using (SqliteCommand command = connection.CreateCommand()) {
             commandBuilder.Append($"SELECT * FROM {typeof(T).Name} ");
-            if (andConditions.Length > 0) {
+            (string, object)[] conditionPairs = Utils.GetPairs(conditions);
+            if (conditionPairs.Length > 0) {
                 commandBuilder.Append("WHERE ");
-                for (int i = 0; i < andConditions.Length; i++) {
-                    var (field, val) = andConditions[i];
+                for (int i = 0; i < conditionPairs.Length; i++) {
+                    var (field, val) = conditionPairs[i];
                     if (i > 0) commandBuilder.Append("AND ");
                     commandBuilder.Append($"{field} = @val{i} ");
                     command.Parameters.AddWithValue($"@val{i}", val);
                 }
-                commandBuilder.Append(";");
             }
             Debug.WriteLine(commandBuilder.ToString());
             command.CommandText = commandBuilder.ToString();

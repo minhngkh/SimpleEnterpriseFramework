@@ -9,24 +9,20 @@ public interface IRepository {
 
     // DeleteRow("User", "Id = 1 AND (Name = 'tuong' OR Name = '123')")
     public abstract void DeleteRow(string table, string condition);
-    public abstract void DeleteRow(string table, params (string, object)[] andConditions);
+    public abstract void DeleteRow(string table, dynamic condition);
 
     // UpdateRow("User", "")
     public abstract void UpdateRow(string table, string condition, string updateStatement);
     public abstract IUpdateCommandBuilder UpdateRowBuilder();
 
-    public abstract void Add(string table, params (string, object)[] values);
+    public abstract void Add(string table, dynamic values);
     public abstract void Add<T>(T obj);
 
-    // Find("User", "Username = 'tuong' AND Id = 1")
-    public abstract List<object[]> Find(string table, string? condition);
-    public abstract List<T> Find<T>(string? condition) where T: struct;
+    public abstract List<object[]> Find(string table, dynamic? conditions = null);
+    public abstract List<T> Find<T>(dynamic? conditions = null) where T: struct;
 
-    public abstract List<object[]> Find(string table, params (string, object)[] andConditions);
-    public abstract List<T> Find<T>(params (string, object)[] andConditions) where T: struct;
-
-    public abstract object[]? FindOne(string table, params (string, object)[] andConditions);
-    public abstract T? FindOne<T>(params (string, object)[] andConditions) where T: struct;
+    public abstract object[]? FindOne(string table, dynamic conditions);
+    public abstract T? FindOne<T>(dynamic condition) where T: struct;
 }
 
 public struct ColumnInfo {
