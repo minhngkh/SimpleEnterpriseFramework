@@ -16,5 +16,9 @@
         <Content Include="Templates\**" CopyToOutputDirectory="Always" />
     </ItemGroup>
 
+    <ItemGroup>
+      <ProjectReference Include="..\SimpleEnterpriseFramework.DataAccess\SimpleEnterpriseFramework.DataAccess.csproj" />
+    </ItemGroup>
+
 
 </Project>

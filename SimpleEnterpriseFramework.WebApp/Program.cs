@@ -1,47 +1,64 @@
 using HandlebarsDotNet;
 using System.IO;
 
-var builder = WebApplication.CreateSlimBuilder(args);
+struct User {
+    [DbField("INTEGER", Unique = true, IsKey = true)]
+    public int Id;
 
-var app = builder.Build();
+    [DbField("TEXT", Unique = true, Nullable = false)]
+    public string Username;
 
-// Load and compile the Handlebars template
-var templatePath = Path.Combine(Directory.GetCurrentDirectory(), "Templates", "index.hbs");
-var templateContent = await File.ReadAllTextAsync(templatePath);
-var template = Handlebars.Compile(templateContent);
+    [DbField("TEXT", Unique = true, Nullable = false)]
+    public string Email;
 
-// Data for the template
-var testdata = new
-{
-    title = "Hello world!",
-    message = "Welcome to Handlebars in ASP.NET!"
-};
+    [DbField("TEXT")]
+    public string? Phone;
 
-var User_templatePath = Path.Combine(Directory.GetCurrentDirectory(), "Templates", "users.hbs");
-var User_templateContent = await File.ReadAllTextAsync(User_templatePath);
-var User_template = Handlebars.Compile(User_templateContent);
+    [DbField("TEXT", Nullable = false)]
+    public string Password;
+}
 
-var Users_data = new
-{
-    title = "User List",
-    users = new[]
-    {
-        new { username = "User1", email = "user1@example.com", password = "password1", phone = "123-456-7890" },
-        new { username = "User2", email = "user2@example.com", password = "password2", phone = "987-654-3210" },
-        new { username = "User3", email = "user3@example.com", password = "password3", phone = "555-666-7777" },
-        new { username = "User4", email = "user4@example.com", password = "password4", phone = "444-555-6666" },
-        new { username = "User5", email = "user5@example.com", password = "password5", phone = "333-222-1111" },
-        new { username = "User6", email = "user6@example.com", password = "password6", phone = "222-333-4444" },
-        new { username = "User7", email = "user7@example.com", password = "password7", phone = "111-222-3333" },
-        new { username = "User8", email = "user8@example.com", password = "password8", phone = "666-777-8888" },
-        new { username = "User9", email = "user9@example.com", password = "password9", phone = "777-888-9999" },
-        new { username = "User10", email = "user10@example.com", password = "password10", phone = "999-000-1111" },
+public class Program {
+    public static void Main(string[] args) {
+        IRepository repo = new SqliteRepository("Data Source=test.db");
+        List<String> tableNames = repo.ListTables();
+
+        repo.CreateTable<User>(true);
+        for (int i = 0; i < 15; i++) {
+            repo.Add<User>(new User() {
+                Id = i,
+                Username = $"user{i}",
+                Email = $"example{i}@gmail.com",
+                Phone = i%2 == 0 ? null : String.Concat(Enumerable.Repeat($"{i}", 10)),
+                Password = $"password{i}"
+            });
+        }
+
+        object getTableParameters(string tableName) {
+            return new {
+                tableName = tableName,
+                columns = repo.ListColumns(tableName).Select(colInfo => colInfo.name).ToArray(),
+                data = repo.Find(tableName),
+            };
+        }
+
+
+        var builder = WebApplication.CreateSlimBuilder(args);
+
+        var app = builder.Build();
+
+        string tableTemplatePart = Path.Combine(Directory.GetCurrentDirectory(), "templates", "table.hbs");
+        string tableTemplate = File.ReadAllText(tableTemplatePart);
+        Handlebars.RegisterTemplate("table", tableTemplate);
+
+        string indexTemplatePart = Path.Combine(Directory.GetCurrentDirectory(), "templates", "index.hbs");;
+        string indexTemplate = File.ReadAllText(indexTemplatePart);
+        var indexPage = Handlebars.Compile(indexTemplate);
+        var tableData = getTableParameters("User");
+        app.MapGet("/", (HttpContext context) => {
+            context.Response.ContentType = "text/html";
+            return indexPage(tableData);
+        });
+        app.Run();
     }
-};
-
-app.MapGet("/", (HttpContext context) =>
-{
-    context.Response.ContentType = "text/html";
-    return User_template(Users_data);
-});
-app.Run();
+}

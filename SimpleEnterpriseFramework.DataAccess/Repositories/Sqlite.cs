@@ -9,6 +9,7 @@ static class Utils {
         Type type = conditions.GetType();
         return type.GetProperties()
             .Select((PropertyInfo p) => (p.Name, p.GetValue(conditions)))
+            .Where(val => val.Item2 != null)
             .ToArray();
     }
 }
@@ -231,7 +232,8 @@ public class SqliteRepository: IRepository {
         FieldInfo[] fields = typeof(T).GetFields(BindingFlags.Instance |
                                                   BindingFlags.Public |
                                                   BindingFlags.DeclaredOnly)
-                                      .Where(field => Attribute.GetCustomAttribute(field, typeof (DbFieldAttribute)) != null)
+                                      .Where(field => Attribute.GetCustomAttribute(field, typeof (DbFieldAttribute)) != null &&
+                                                      field.GetValue(obj) != null)
                                       .ToArray();
         if (fields.Length == 0) return;
         StringBuilder fieldBuilder = new();
