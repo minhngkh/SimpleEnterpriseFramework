@@ -110,10 +110,10 @@ public class SqliteRepository: IRepository {
             if (foreignConstraintBuilder.Length > 0) {
                 commandBuilder.Append(foreignConstraintBuilder.ToString());
             }
-            commandBuilder.Remove(commandBuilder.Length-2, 1); // remove trailing ','
+            commandBuilder.Remove(commandBuilder.Length-3, 1); // remove trailing ',' (THAY -2 NẾU ĐANG CHẠY TRÊN LINUX, -3 NẾU TRÊN WINDOW)
             commandBuilder.AppendLine(") STRICT;");
             command.CommandText = commandBuilder.ToString();
-            Debug.WriteLine(commandBuilder.ToString());
+            Console.WriteLine(commandBuilder.ToString());
             command.ExecuteNonQuery();
         }
     }
