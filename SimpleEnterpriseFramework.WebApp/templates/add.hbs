@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add New {{tableName}}</title>
+</head>
+<body>
+    <h1>Add New {{tableName}}</h1>
+
+    <form action="/submit" method="post">
+        <!-- Hidden field to pass the table name -->
+        <input type="hidden" name="tableName" value="{{tableName}}">
+
+        {{#each columns}}
+            <div>
+                <label for="{{this}}">{{this}}:</label>
+                <input type="text" name="{{this}}" id="{{this}}" required>
+            </div>
+        {{/each}}
+
+        <button type="submit">Submit</button>
+    </form>
+
+</body>
+</html>

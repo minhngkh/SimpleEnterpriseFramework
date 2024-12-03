@@ -94,6 +94,41 @@ public class Program {
             }
             throw new Exception("Invalid usage of route /table, require query parameter 'tableName'");
         });
+        app.MapGet("/add", (HttpContext context) => {
+            StringValues tableName;
+            context.Request.Query.TryGetValue("tableName", out tableName);
+
+            if (tableName.Count > 0)
+            {
+                var columns = repo.ListColumns(tableName[0]);  // Get columns for the specified table
+                var data = new { tableName = tableName[0], columns = columns };
+                var template = Handlebars.Compile(File.ReadAllText("templates/add.hbs"));
+                return Results.Content(template(data), "text/html");
+            }
+
+            return Results.Content("Invalid table name.", "text/html");
+        });
+        app.MapPost("/submit", async (HttpContext context) =>
+        {
+            var formData = await context.Request.ReadFormAsync();
+            var tableName = formData["tableName"].ToString();
+
+            // Insert data into the database here
+            var newData = new Dictionary<string, object>();
+            foreach (var column in repo.ListColumns(tableName))
+            {
+                if (formData.ContainsKey(column.name))
+                {
+                    newData[column.name] = formData[column.name];
+                }
+            }
+
+            repo.Add(tableName, newData); // You may need to adjust this line based on your repo's Add method
+
+            // Redirect to the table view page after submitting
+            context.Response.Redirect($"/table?tableName={tableName}");
+        });
+
         app.Run();
     }
 }

@@ -1,19 +1,22 @@
 <div>
+    <!-- Add Button -->
+    <button onclick="window.location.href='/add?tableName={{tableName}}'">Add New {{tableName}}</button>
+
     <table>
         <thead>
             <tr>
-            {{#each columns}}
-                <th>{{this}}</th>
-            {{/each}}
+                {{#each columns}}
+                    <th>{{this}}</th>
+                {{/each}}
             </tr>
         </thead>
         <tbody>
             {{#each data}}
-            <tr>
-                {{#each this}}
-                <td>{{this}}</td>
-                {{/each}}
-            </tr>
+                <tr>
+                    {{#each this}}
+                        <td>{{this}}</td>
+                    {{/each}}
+                </tr>
             {{/each}}
         </tbody>
     </table>
