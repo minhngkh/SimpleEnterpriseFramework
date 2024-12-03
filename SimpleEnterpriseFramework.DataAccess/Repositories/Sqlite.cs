@@ -92,6 +92,7 @@ public class SqliteRepository: IRepository {
                 command.CommandText = $"DROP TABLE IF EXISTS {typeof(T).Name}";
                 command.ExecuteNonQuery();
             }
+
             foreach (FieldInfo mem in fields) {
                 DbFieldAttribute dbAttr = (DbFieldAttribute)Attribute.GetCustomAttribute(mem, typeof (DbFieldAttribute))!;
                 if (dbAttr.IsKey) {
@@ -110,10 +111,8 @@ public class SqliteRepository: IRepository {
             if (foreignConstraintBuilder.Length > 0) {
                 commandBuilder.Append(foreignConstraintBuilder.ToString());
             }
-            commandBuilder.Remove(commandBuilder.Length-3, 1); // remove trailing ',' (THAY -2 NẾU ĐANG CHẠY TRÊN LINUX, -3 NẾU TRÊN WINDOW)
-            commandBuilder.AppendLine(") STRICT;");
-            command.CommandText = commandBuilder.ToString();
-            Console.WriteLine(commandBuilder.ToString());
+                        command.CommandText = $"{commandBuilder.ToString().TrimEnd(" \n\r,".ToCharArray())}\n) STRICT;";
+            Debug.WriteLine(command.CommandText);
             command.ExecuteNonQuery();
         }
     }
