@@ -12,6 +12,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SimpleEnterpriseFramework.C
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SimpleEnterpriseFramework.WebApp", "SimpleEnterpriseFramework.WebApp\SimpleEnterpriseFramework.WebApp.csproj", "{5C95E761-F32A-4C8E-90B9-79A9992E327A}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SimpleEnterpriseFramework.Tests", "SimpleEnterpriseFramework.Tests\SimpleEnterpriseFramework.Tests.csproj", "{DC4E6049-E6FB-4CC7-995D-3B7328B054B7}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -42,5 +44,9 @@ Global
 		{5C95E761-F32A-4C8E-90B9-79A9992E327A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5C95E761-F32A-4C8E-90B9-79A9992E327A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5C95E761-F32A-4C8E-90B9-79A9992E327A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DC4E6049-E6FB-4CC7-995D-3B7328B054B7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DC4E6049-E6FB-4CC7-995D-3B7328B054B7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DC4E6049-E6FB-4CC7-995D-3B7328B054B7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DC4E6049-E6FB-4CC7-995D-3B7328B054B7}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
