@@ -100,34 +100,54 @@ public class Program {
 
             if (tableName.Count > 0)
             {
-                var columns = repo.ListColumns(tableName[0]);  // Get columns for the specified table
+                var rawColumns = repo.ListColumns(tableName[0]);
+                //var columns = repo.ListColumns(tableName[0]);  
+                var columns = rawColumns.Select(col => 
+                {
+                    var parts = col.name.Split(':');
+                    return parts.Length > 2 ? parts[2] : col.name;
+                }).ToList();
                 var data = new { tableName = tableName[0], columns = columns };
                 var template = Handlebars.Compile(File.ReadAllText("templates/add.hbs"));
+
+                Console.WriteLine("Columns: " + string.Join(", ", columns));
+                Console.WriteLine($"Data: tableName={data.tableName}, columns={string.Join(", ", data.columns)}");
+                Console.WriteLine("Template Generated Successfully");
+
                 return Results.Content(template(data), "text/html");
             }
 
             return Results.Content("Invalid table name.", "text/html");
         });
-        app.MapPost("/submit", async (HttpContext context) =>
-        {
+        app.MapPost("/submit", async (HttpContext context) => {
             var formData = await context.Request.ReadFormAsync();
-            var tableName = formData["tableName"].ToString();
+            string tableName = formData["tableName"];
 
-            // Insert data into the database here
+            if (string.IsNullOrEmpty(tableName))
+            {
+                return Results.BadRequest("Table name is missing.");
+            }
+
             var newData = new Dictionary<string, object>();
             foreach (var column in repo.ListColumns(tableName))
             {
                 if (formData.ContainsKey(column.name))
                 {
-                    newData[column.name] = formData[column.name];
+                    newData[column.name] = formData[column.name].ToString();
                 }
             }
 
-            repo.Add(tableName, newData); // You may need to adjust this line based on your repo's Add method
-
-            // Redirect to the table view page after submitting
-            context.Response.Redirect($"/table?tableName={tableName}");
+            try
+            {
+                repo.Add(tableName, newData);
+                return Results.Redirect($"/table?tableName={tableName}");
+            }
+            catch (Exception ex)
+            {
+                return Results.Problem($"Error adding data: {ex.Message}");
+            }
         });
+
 
         app.Run();
     }
