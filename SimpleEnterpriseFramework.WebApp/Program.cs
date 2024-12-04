@@ -86,11 +86,14 @@ public class Program {
             });
         });
         app.MapGet("/table", (HttpContext context) => {
-            StringValues strings;
-            context.Request.Query.TryGetValue("tableName", out strings);
-            Debug.WriteLine(strings.ToString());
-            if (strings.Count > 0) {
-                return tablePart(getTableParameters(strings[0]!));
+            StringValues tablename;
+            context.Request.Query.TryGetValue("tableName", out tablename);
+            Debug.WriteLine(tablename.ToString());
+            
+            if (tablename.Count > 0) {
+                var parameters = getTableParameters(tablename[0]);
+                return Results.Content(tablePart(parameters), "text/html");
+                //return tablePart(getTableParameters(strings[0]!));
             }
             throw new Exception("Invalid usage of route /table, require query parameter 'tableName'");
         });
