@@ -35,8 +35,9 @@ public class Container : IContainer
             typeof(TImplementation)
         );
     }
-    
-    public void RegisterSingleton<TService, TImplementation>() where TImplementation : TService
+
+    public void RegisterSingleton<TService, TImplementation>()
+        where TImplementation : TService
     {
         _services[typeof(TService)] = new ServiceDescriptor(
             typeof(TService),
@@ -44,7 +45,7 @@ public class Container : IContainer
             ServiceLifetime.Singleton
         );
     }
-    
+
     public void RegisterSingleton<TService>(TService instance)
     {
         ArgumentNullException.ThrowIfNull(instance);
@@ -55,8 +56,9 @@ public class Container : IContainer
             ServiceLifetime.Singleton
         );
     }
-    
-    public void RegisterTransient<TService, TImplementation>() where TImplementation : TService
+
+    public void RegisterTransient<TService, TImplementation>()
+        where TImplementation : TService
     {
         _services[typeof(TService)] = new ServiceDescriptor(
             typeof(TService),
@@ -117,8 +119,8 @@ public class Container : IContainer
     {
         if (!_services.TryGetValue(serviceType, out var descriptor))
         {
-            throw new InvalidOperationException(
-                $"Service of type {serviceType} not found.");
+            service = default;
+            return false;
         }
 
         switch (descriptor.Lifetime)
@@ -139,8 +141,6 @@ public class Container : IContainer
 
             case ServiceLifetime.Transient:
                 return TryCreateInstance(descriptor.ImplementationType, out service);
-            case ServiceLifetime.Scoped:
-                throw new NotImplementedException();
 
             default:
                 throw new ArgumentOutOfRangeException();
