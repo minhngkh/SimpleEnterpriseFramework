@@ -1,40 +1,154 @@
-using System.Text.Json.Serialization;
+using HandlebarsDotNet;
+using System.IO;
+using System.Web;
+using System.Diagnostics;
+using Microsoft.Extensions.Primitives;
 
-var builder = WebApplication.CreateSlimBuilder(args);
+struct Product {
+    [DbField("INTEGER", Unique = true, IsKey = true)]
+    public int Id;
 
-builder.Services.ConfigureHttpJsonOptions(options =>
-{
-    options.SerializerOptions.TypeInfoResolverChain.Insert(0,
-        AppJsonSerializerContext.Default);
-});
+    [DbField("TEXT", Nullable = false)]
+    public string Name;
 
-var app = builder.Build();
+    [DbField("REAL", Nullable = false)]
+    public float Price;
+}
 
-var sampleTodos = new Todo[]
-{
-    new(1, "Walk the dog"),
-    new(2, "Do the dishes", DateOnly.FromDateTime(DateTime.Now)),
-    new(3, "Do the laundry", DateOnly.FromDateTime(DateTime.Now.AddDays(1))),
-    new(4, "Clean the bathroom"),
-    new(5, "Clean the car", DateOnly.FromDateTime(DateTime.Now.AddDays(2)))
-};
+struct User {
+    [DbField("INTEGER", Unique = true, IsKey = true)]
+    public int Id;
 
-var todosApi = app.MapGroup("/todos");
-todosApi.MapGet("/", () => sampleTodos);
-todosApi.MapGet("/{id}", (int id) =>
-    sampleTodos.FirstOrDefault(a => a.Id == id) is { } todo
-        ? Results.Ok(todo)
-        : Results.NotFound());
+    [DbField("TEXT", Unique = true, Nullable = false)]
+    public string Username;
 
-app.Run();
+    [DbField("TEXT", Unique = true, Nullable = false)]
+    public string Email;
 
-public record Todo(
-    int Id,
-    string? Title,
-    DateOnly? DueBy = null,
-    bool IsComplete = false);
+    [DbField("TEXT")]
+    public string? Phone;
 
-[JsonSerializable(typeof(Todo[]))]
-internal partial class AppJsonSerializerContext : JsonSerializerContext
-{
+    [DbField("TEXT", Nullable = false)]
+    public string Password;
+}
+
+public class Program {
+    public static void Main(string[] args) {
+        IRepository repo = new SqliteRepository("Data Source=test.db");
+        List<String> tableNames = repo.ListTables();
+
+        repo.CreateTable<User>(true);
+        repo.CreateTable<Product>(true);
+
+        for (int i = 0; i < 15; i++) {
+            repo.Add<Product>(new Product() {
+                Id = i,
+                Name = $"product{i}",
+                Price = i*1000.0f,
+            });
+            repo.Add<User>(new User() {
+                Id = i,
+                Username = $"user{i}",
+                Email = $"example{i}@gmail.com",
+                Phone = i%2 == 0 ? null : String.Concat(Enumerable.Repeat($"{i}", 10)),
+                Password = $"password{i}"
+            });
+        }
+
+        object getTableParameters(string tableName) {
+            return new {
+                tableName = tableName,
+                columns = repo.ListColumns(tableName).Select(colInfo => colInfo.name).ToArray(),
+                data = repo.Find(tableName),
+            };
+        }
+
+
+        var builder = WebApplication.CreateSlimBuilder(args);
+
+        var app = builder.Build();
+
+        string tableTemplatePath = Path.Combine(Directory.GetCurrentDirectory(), "templates", "table.hbs");
+        string tableTemplate = File.ReadAllText(tableTemplatePath);
+        var tablePart = Handlebars.Compile(tableTemplate);
+        Handlebars.RegisterTemplate("table", tableTemplate);
+
+        string indexTemplatePath = Path.Combine(Directory.GetCurrentDirectory(), "templates", "index.hbs");;
+        string indexTemplate = File.ReadAllText(indexTemplatePath);
+        var indexPage = Handlebars.Compile(indexTemplate);
+        var tableData = getTableParameters("User");
+
+        app.MapGet("/", (HttpContext context) => {
+            context.Response.ContentType = "text/html";
+            return indexPage(new {
+                tableNames = repo.ListTables(),
+                // data = tableData,
+            });
+        });
+        app.MapGet("/table", (HttpContext context) => {
+            StringValues strings;
+            context.Request.Query.TryGetValue("tableName", out strings);
+            Debug.WriteLine(strings.ToString());
+            if (strings.Count > 0) {
+                return tablePart(getTableParameters(strings[0]!));
+            }
+            throw new Exception("Invalid usage of route /table, require query parameter 'tableName'");
+        });
+        app.MapGet("/add", (HttpContext context) => {
+            StringValues tableName;
+            context.Request.Query.TryGetValue("tableName", out tableName);
+
+            if (tableName.Count > 0)
+            {
+                var rawColumns = repo.ListColumns(tableName[0]);
+                //var columns = repo.ListColumns(tableName[0]);  
+                var columns = rawColumns.Select(col => 
+                {
+                    var parts = col.name.Split(':');
+                    return parts.Length > 2 ? parts[2] : col.name;
+                }).ToList();
+                var data = new { tableName = tableName[0], columns = columns };
+                var template = Handlebars.Compile(File.ReadAllText("templates/add.hbs"));
+
+                Console.WriteLine("Columns: " + string.Join(", ", columns));
+                Console.WriteLine($"Data: tableName={data.tableName}, columns={string.Join(", ", data.columns)}");
+                Console.WriteLine("Template Generated Successfully");
+
+                return Results.Content(template(data), "text/html");
+            }
+
+            return Results.Content("Invalid table name.", "text/html");
+        });
+        app.MapPost("/submit", async (HttpContext context) => {
+            var formData = await context.Request.ReadFormAsync();
+            string tableName = formData["tableName"];
+
+            if (string.IsNullOrEmpty(tableName))
+            {
+                return Results.BadRequest("Table name is missing.");
+            }
+
+            var newData = new Dictionary<string, object>();
+            foreach (var column in repo.ListColumns(tableName))
+            {
+                if (formData.ContainsKey(column.name))
+                {
+                    newData[column.name] = formData[column.name].ToString();
+                }
+            }
+
+            try
+            {
+                repo.Add(tableName, newData);
+                return Results.Redirect($"/table?tableName={tableName}");
+            }
+            catch (Exception ex)
+            {
+                return Results.Problem($"Error adding data: {ex.Message}");
+            }
+        });
+
+
+        app.Run();
+    }
 }

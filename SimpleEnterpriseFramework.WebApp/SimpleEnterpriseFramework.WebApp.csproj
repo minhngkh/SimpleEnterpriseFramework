@@ -8,4 +8,17 @@
         <PublishAot>true</PublishAot>
     </PropertyGroup>
 
+    <ItemGroup>
+      <PackageReference Include="Handlebars.Net" Version="2.1.6" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <Content Include="Templates\**" CopyToOutputDirectory="Always" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\SimpleEnterpriseFramework.DataAccess\SimpleEnterpriseFramework.DataAccess.csproj" />
+    </ItemGroup>
+
+
 </Project>

@@ -1,11 +1,6 @@
 @SimpleEnterpriseFramework.WebApp_HostAddress = http://localhost:5126
 
-GET {{SimpleEnterpriseFramework.WebApp_HostAddress}}/todos/
-Accept: application/json
-
-###
-
-GET {{SimpleEnterpriseFramework.WebApp_HostAddress}}/todos/1
+GET {{SimpleEnterpriseFramework.WebApp_HostAddress}}/
 Accept: application/json
 
 ###
