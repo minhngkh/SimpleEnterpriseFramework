@@ -2,6 +2,7 @@ using HandlebarsDotNet;
 using System.IO;
 using System.Web;
 using System.Diagnostics;
+using System.Text.Json.Serialization;
 using Microsoft.Extensions.Primitives;
 
 struct Product {
@@ -30,6 +31,12 @@ struct User {
 
     [DbField("TEXT", Nullable = false)]
     public string Password;
+}
+
+[JsonSerializable(typeof(string))]
+[JsonSerializable(typeof(Microsoft.AspNetCore.Mvc.ProblemDetails))]
+internal partial class AppJsonSerializerContext : JsonSerializerContext
+{
 }
 
 public class Program {
@@ -65,8 +72,14 @@ public class Program {
 
 
         var builder = WebApplication.CreateSlimBuilder(args);
+        builder.Services.ConfigureHttpJsonOptions(options =>
+        {
+            options.SerializerOptions.TypeInfoResolverChain.Insert(0,
+                AppJsonSerializerContext.Default);
+        });
 
-        var app = builder.Build();
+
+        WebApplication app = builder.Build();
 
         string tableTemplatePath = Path.Combine(Directory.GetCurrentDirectory(), "templates", "table.hbs");
         string tableTemplate = File.ReadAllText(tableTemplatePath);
@@ -86,24 +99,18 @@ public class Program {
             });
         });
         app.MapGet("/table", (HttpContext context) => {
-            StringValues tablename;
-            context.Request.Query.TryGetValue("tableName", out tablename);
-            Debug.WriteLine(tablename.ToString());
-            
-            if (tablename.Count > 0) {
-                var parameters = getTableParameters(tablename[0]);
+            StringValues tablename = context.Request.Query["tableName"];
+            if (!StringValues.IsNullOrEmpty(tablename)) {
+                Debug.WriteLine(tablename.ToString());
+                var parameters = getTableParameters(tablename[0]!);
                 return Results.Content(tablePart(parameters), "text/html");
-                //return tablePart(getTableParameters(strings[0]!));
             }
-            throw new Exception("Invalid usage of route /table, require query parameter 'tableName'");
+            return Results.BadRequest("Table name is missing.");
         });
         app.MapGet("/add", (HttpContext context) => {
-            StringValues tableName;
-            context.Request.Query.TryGetValue("tableName", out tableName);
-
-            if (tableName.Count > 0)
-            {
-                var rawColumns = repo.ListColumns(tableName[0]);
+            StringValues tableName = context.Request.Query["tableName"];
+            if (!StringValues.IsNullOrEmpty(tableName)) {
+                var rawColumns = repo.ListColumns(tableName[0]!);
                 //var columns = repo.ListColumns(tableName[0]);  
                 var columns = rawColumns.Select(col => 
                 {
@@ -120,11 +127,11 @@ public class Program {
                 return Results.Content(template(data), "text/html");
             }
 
-            return Results.Content("Invalid table name.", "text/html");
+            return Results.BadRequest("Table name is missing.");
         });
         app.MapPost("/submit", async (HttpContext context) => {
             var formData = await context.Request.ReadFormAsync();
-            string tableName = formData["tableName"];
+            string? tableName = formData["tableName"];
 
             if (string.IsNullOrEmpty(tableName))
             {
