@@ -1,0 +1,112 @@
+<!-- Popup Form -->  
+<div id="addModal" class="modal">
+    <div class="modal-content">
+        <span class="close" id="closeModalButton">&times;</span>
+        <h2>New {{tableName}}</h2>
+
+        <form action="/submit" method="post">
+            <!-- Hidden field to pass the table name -->
+            <input type="hidden" name="tableName" value="{{tableName}}">
+
+            {{#each columns}}
+                {{#if (neq this "Id")}} <!-- Exclude the "Id" column -->
+                    <div class="form-group">
+                        <label for="{{this}}">{{this}}:</label>
+                        <input type="text" name="{{this}}" id="{{this}}" required>
+                    </div>
+                {{/if}}
+            {{/each}}
+
+            <button type="submit">Submit</button>
+        </form>
+    </div>
+</div>
+
+<!-- Styling for Popup -->  
+<style>
+    /* Modal styles */
+    .modal {
+        display: none; /* Hidden by default */
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        overflow: auto;
+        background-color: rgba(0, 0, 0, 0.4); /* Black with transparency */
+    }
+
+    .modal-content {
+        background-color: #fefefe;
+        margin: 15% auto; /* Centered */
+        padding: 20px;
+        border: 1px solid #888;
+        width: 50%;
+        border-radius: 8px;
+    }
+
+    .close {
+        color: #aaa;
+        float: right;
+        font-size: 28px;
+        font-weight: bold;
+        cursor: pointer;
+    }
+
+    .close:hover,
+    .close:focus {
+        color: black;
+        text-decoration: none;
+        cursor: pointer;
+    }
+
+    .form-group {
+        margin-bottom: 1em;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 0.5em;
+    }
+
+    .form-group input {
+        width: 100%;
+        padding: 0.5em;
+        box-sizing: border-box;
+    }
+
+    button {
+        padding: 0.5em 1em;
+        margin-top: 1em;
+        cursor: pointer;
+    }
+</style>
+
+<!-- Script for Popup -->  
+<script>  
+(() => {
+    // Get modal and buttons
+    const modal = document.getElementById('addModal');
+    const openModalButton = document.getElementById('openModalButton');
+    const closeModalButton = document.getElementById('closeModalButton');
+
+    // Open the popup and set its title
+    openModalButton.addEventListener("click", () => {
+        modal.style.display = 'block';
+        modal.classList.remove("hidden");
+    });
+
+    // Close modal
+    closeModalButton.addEventListener('click', () => {
+        modal.style.display = 'none';
+    });
+
+    // Close modal when clicking outside of it
+    window.addEventListener('click', (event) => {
+        if (event.target === modal) {
+            modal.style.display = 'none';
+        }
+    });
+})();
+</script>
