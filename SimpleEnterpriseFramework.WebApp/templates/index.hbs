@@ -94,8 +94,6 @@ body {
     function load_table(tableName) {
         fetch(`http://localhost:5126/table?tableName=${tableName}`).then(async response => {
             const responseText = await response.text();
-            console.log(responseText);
-            console.log(response.status);
             if (response.status == 200) { 
                 if (currentTable !== null) {
                     currentTable.classList.remove("current");
@@ -103,7 +101,21 @@ body {
                 currentTable = document.getElementById(`tableName-${tableName}`);
                 currentTable.classList.add("current");
                 // console.log(document.getElementById("table-data"));
-                document.getElementById("table-data").innerHTML = responseText;
+                const table = document.getElementById("table-data")
+                table.insertAdjacentHTML("beforeend", responseText);
+                const tableScripts = table.getElementsByTagName("script");
+                for (const script of tableScripts) {
+                    script.parentNode.removeChild(script);
+                    var newScript = document.createElement("script");
+                    if (script.src) {
+                        newScript.src = script.src;
+                    } else if (script.textContent) {
+                        newScript.textContent = script.textContent;
+                    } else if (script.innerText) {
+                        newScript.innerText = script.innerText;
+                    }
+                    document.body.appendChild(newScript);
+                }
             } else {
                 alert(response.statusText);
             }

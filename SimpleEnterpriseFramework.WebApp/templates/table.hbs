@@ -114,11 +114,12 @@
     const openModalButton = document.getElementById('openModalButton');
     const closeModalButton = document.getElementById('closeModalButton');
 
-    // Open the popup and set its title  
-    addEventListener('click', () => {
+    // Open the popup and set its title
+    openModalButton.addEventListener("click", () => {
+        console.log("Clock");
         modal.style.display = 'block';
-        modal.classList.remove('hidden');
-    }); 
+        modal.classList.remove("hidden");
+    });
 
     // Close modal
     closeModalButton.addEventListener('click', () => {
