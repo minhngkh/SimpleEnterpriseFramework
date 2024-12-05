@@ -102,6 +102,7 @@ body {
                 currentTable.classList.add("current");
                 // console.log(document.getElementById("table-data"));
                 const table = document.getElementById("table-data")
+                table.innerHTML = '';
                 table.insertAdjacentHTML("beforeend", responseText);
                 const tableScripts = table.getElementsByTagName("script");
                 for (const script of tableScripts) {
@@ -115,6 +116,7 @@ body {
                         newScript.innerText = script.innerText;
                     }
                     document.body.appendChild(newScript);
+                    document.body.removeChild(newScript);
                 }
             } else {
                 alert(response.statusText);

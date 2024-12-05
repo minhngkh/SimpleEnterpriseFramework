@@ -109,6 +109,7 @@
 
 <!-- Script for Popup -->  
 <script>  
+(() => {
     // Get modal and buttons
     const modal = document.getElementById('addModal');
     const openModalButton = document.getElementById('openModalButton');
@@ -116,7 +117,6 @@
 
     // Open the popup and set its title
     openModalButton.addEventListener("click", () => {
-        console.log("Clock");
         modal.style.display = 'block';
         modal.classList.remove("hidden");
     });
@@ -132,4 +132,5 @@
             modal.style.display = 'none';
         }
     });
+})();
 </script>
