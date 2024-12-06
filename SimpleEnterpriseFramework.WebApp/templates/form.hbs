@@ -108,5 +108,27 @@
             modal.style.display = 'none';
         }
     });
+
+    addForm.addEventListener('submit', function(event) {
+        event.preventDefault(); // Prevent default form submission
+
+        const formData = new FormData(addForm);
+
+        // Send the form data using Fetch API
+        fetch('/submit', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.text())  // Expect HTML content to return
+        .then(data => {
+            // Replace the content of the table with the updated HTML
+            document.getElementById('tableContainer').innerHTML = data;
+            modal.style.display = 'none';  // Close the modal after successful submission
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('There was an error submitting the form.');
+        });
+    });
 })();
 </script>

@@ -1,38 +1,57 @@
 using HandlebarsDotNet;
 using System.IO;
 using System.Web;
+using System.Text;
 using System.Diagnostics;
 using System.Text.Json.Serialization;
 using Microsoft.Extensions.Primitives;
+using Microsoft.Data.Sqlite;
+
+
+#nullable enable
 
 struct Product
 {
     [DbField("INTEGER", Unique = true, IsKey = true)]
-    public int Id;
+    public int Id; // Field, not a property
 
     [DbField("TEXT", Nullable = false)]
-    public string Name;
+    public string name; // Field, not a property
 
     [DbField("REAL", Nullable = false)]
-    public float Price;
+    public float price; // Field, not a property
+
+    public Product(string name, float price) : this()
+    {
+        this.name = name;
+        this.price = price;
+    }
 }
 
 struct User
 {
     [DbField("INTEGER", Unique = true, IsKey = true)]
-    public int Id;
+    public int Id; // Field, not a property
 
     [DbField("TEXT", Unique = true, Nullable = false)]
-    public string Username;
+    public string username; // Field, not a property
 
     [DbField("TEXT", Unique = true, Nullable = false)]
-    public string Email;
+    public string email; // Field, not a property
 
     [DbField("TEXT")]
-    public string? Phone;
+    public string? phone; // Field, not a property
 
     [DbField("TEXT", Nullable = false)]
-    public string Password;
+    public string password; // Field, not a property
+
+    public User(string username, string email, string? phone, string password) : this()
+    {
+        this.username = username;
+        this.email = email;
+        this.phone = phone;
+        this.password = password;
+    }
 }
 
 [JsonSerializable(typeof(string))]
@@ -46,27 +65,23 @@ public class Program
     public static void Main(string[] args)
     {
         IRepository repo = new SqliteRepository("Data Source=test.db");
-        List<String> tableNames = repo.ListTables();
+        List<string> tableNames = repo.ListTables();
 
         repo.CreateTable<User>(true);
         repo.CreateTable<Product>(true);
 
-        for (int i = 0; i < 15; i++)
+        for (int i = 0; i < 16; i++)
         {
-            repo.Add<Product>(new Product()
-            {
-                Id = i,
-                Name = $"product{i}",
-                Price = i * 1000.0f,
-            });
-            repo.Add<User>(new User()
-            {
-                Id = i,
-                Username = $"user{i}",
-                Email = $"example{i}@gmail.com",
-                Phone = i % 2 == 0 ? null : String.Concat(Enumerable.Repeat($"{i}", 10)),
-                Password = $"password{i}"
-            });
+            repo.Add<Product>(new Product(
+                name: $"product{i}",
+                price: i * 1000.0f
+            ));
+            repo.Add<User>(new User(
+                username: $"user{i}",
+                email: $"example{i}@gmail.com",
+                phone: i % 2 == 0 ? null : new string($"{i}"[0], 10),
+                password: $"password{i}"
+            ));
         }
 
         object getTableParameters(string tableName)
@@ -98,14 +113,13 @@ public class Program
         {
             if (parameters.Length > 0 && parameters[0].ToString() != "Id")
             {
-                writer.WriteSafeString(context);  // Render the content if condition is true
+                writer.WriteSafeString(context);
             }
         });
 
         string indexTemplatePath = Path.Combine(Directory.GetCurrentDirectory(), "templates", "index.hbs");
         string indexTemplate = File.ReadAllText(indexTemplatePath);
         var indexPage = Handlebars.Compile(indexTemplate);
-        var tableData = getTableParameters("User");
 
         string formTemplatePath = Path.Combine(Directory.GetCurrentDirectory(), "templates", "form.hbs");
         string formTemplate = File.ReadAllText(formTemplatePath);
@@ -125,7 +139,6 @@ public class Program
             StringValues tableName = context.Request.Query["tableName"];
             if (!StringValues.IsNullOrEmpty(tableName))
             {
-                Debug.WriteLine(tableName.ToString());
                 var parameters = getTableParameters(tableName[0]!);
                 return Results.Content(tablePart(parameters), "text/html");
             }
@@ -162,84 +175,57 @@ public class Program
                 return Results.BadRequest("Table name is missing.");
             }
 
-            var newData = new Dictionary<string, object>();
+            var newData = new Dictionary<string, object?>();
+
+            // List all columns from the table
             var columns = repo.ListColumns(tableName);
+            Console.WriteLine("Columns: " + string.Join(", ", columns));
 
-            Console.WriteLine("Columns in table:");
-            fapp.MapPost("/submit", async (HttpContext context) =>
-        {
-            var formData = await context.Request.ReadFormAsync();
-            string? tableName = formData["tableName"];
-
-            if (string.IsNullOrEmpty(tableName))
-            {
-                return Results.BadRequest("Table name is missing.");
-            }
-
-            var newData = new Dictionary<string, object>();
-            var columns = repo.ListColumns(tableName);
-
-            Console.WriteLine("Columns in table:");
+            // Collect the form data for each column
             foreach (var column in columns)
             {
-                Console.WriteLine($"{column.name} (Type: {column.type})");
-            }
-
-            // Add columns to newData, skip Id if not provided
-            foreach (var column in columns)
-            {
-                if (column.name == "Id" && !formData.ContainsKey("Id"))
-                {
-                    // Skip adding Id if it's not provided
-                    continue;
-                }
-
                 if (formData.ContainsKey(column.name))
                 {
                     var value = formData[column.name].ToString();
-                    if (column.type == "INTEGER" && int.TryParse(value, out var intValue))
+                    if (column.name == "Id" && string.IsNullOrEmpty(value))
                     {
-                        newData[column.name] = intValue;
+                        // Skip the 'Id' field, SQLite will auto-increment it
+                        continue;
                     }
-                    else if (column.type == "REAL" && float.TryParse(value, out var floatValue))
-                    {
-                        newData[column.name] = floatValue;
-                    }
-                    else
-                    {
-                        newData[column.name] = value;
-                    }
+                    newData[column.name] = value;
                 }
-                else
+                else if (column.name != "Id") // Skip Id if not provided
                 {
-                    newData[column.name] = null; // Handle nullable columns
+                    // Set columns that are missing (except Id) to null
+                    newData[column.name] = null;
                 }
             }
 
-            Console.WriteLine("Received data to insert:");
-            foreach (var kvp in newData)
+            // Printing newData with detailed key-value pairs
+            Console.WriteLine("Data:");
+            foreach (var item in newData)
             {
-                Console.WriteLine($"{kvp.Key}: {kvp.Value}");
-            }
-
-            // Check for parameter mismatch
-            if (newData.Count != columns.Count(col => col.name != "Id"))
-            {
-                return Results.BadRequest("Parameter count mismatch.");
+                Console.WriteLine($"{item.Key}: {item.Value}");
             }
 
             try
             {
+                // Call the appropriate Add method, where repo handles auto-increment of Id
                 repo.Add(tableName, newData);
-                return Results.Redirect($"/table?tableName={tableName}");
+
+                // Generate the updated table HTML content
+                var parameters = getTableParameters(tableName);
+                var updatedTableHtml = tablePart(parameters);
+
+                // Return the updated table HTML as the response
+                return Results.Content(updatedTableHtml, "text/html");
             }
             catch (Exception ex)
             {
+                Console.WriteLine(ex);
                 return Results.Problem($"Error adding data: {ex.Message}");
             }
         });
-
-
         app.Run();
     }
 }
