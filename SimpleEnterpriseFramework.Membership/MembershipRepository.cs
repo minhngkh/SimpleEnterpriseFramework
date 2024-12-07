@@ -156,16 +156,14 @@ public class MembershipRepository
 
         try
         {
-            _repository.UpdateRowBuilder()
-                .SetTable("User")
-                .SetCondition(new { Username = userNameIdentify })
-                .SetUpdateStatement(new
+            _repository.UpdateRow("User", new { Username = userNameIdentify },
+                new
                 {
-                    Username = userName, 
+                    Username = userName,
                     Password = password,
                     RoleId = roles[0].Id,
-                })
-                .Update();
+                });
+                
             Console.WriteLine("User updated successfully.");
         }
         catch(Exception ex)

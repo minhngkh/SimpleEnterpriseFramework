@@ -1,20 +1,24 @@
+using System.Diagnostics;
 using HandlebarsDotNet;
 using System.IO;
+using Microsoft.Extensions.Primitives;
 using SimpleEnterpriseFramework.Membership;
 
 
 public class Program {
     public static void Main(string[] args) {
-        MembershipRepository repo = new MembershipRepository();
+        MembershipRepository membership = new MembershipRepository();
+        IRepository repo = new SqliteRepository("Data Source=membership.db");
         // List<String> tableNames = repo.ListTables();
 
-        // repo.CreateUserTable();
-        // repo.CreateRoleTable();
-        // repo.AddRole("admin");
-        // repo.AddRole("user");
-        // repo.AddUser("anhhoang123", "123", "admin");
-        // repo.DeleteUser("anhhoang");
-           repo.modifyUser("anhhoang123", "anh", "456", "user");
+        membership.CreateUserTable();
+        membership.CreateRoleTable();
+        membership.AddRole("admin");
+        membership.AddRole("user");
+        membership.AddUser("anhhoang", "123", "admin");
+        membership.AddUser("anhhoang123", "123", "admin");
+        membership.DeleteUser("anhhoang");
+        membership.modifyUser("anhhoang123", "anh", "456", "user");
         
         // for (int i = 0; i < 15; i++) {
         //     repo.Add<User>(new User() {
