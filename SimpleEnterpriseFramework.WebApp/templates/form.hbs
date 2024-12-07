@@ -1,12 +1,14 @@
 <!-- Popup Form -->  
-<div id="addModal" class="modal">
+<div id="formModal" class="modal">
     <div class="modal-content">
         <span class="close" id="closeModalButton">&times;</span>
-        <h2>New {{tableName}}</h2>
+        <h2 id="formTitle">New {{tableName}}</h2>
 
-        <form action="/submit" method="post">
+        <form id="addForm">
             <!-- Hidden field to pass the table name -->
             <input type="hidden" name="tableName" value="{{tableName}}">
+            <input type="hidden" name="formMode" id="formMode" value="Create">
+            <input type="hidden" name="rowId" id="rowId" value="">
 
             {{#each columns}}
                 {{#if (neq this "Id")}} <!-- Exclude the "Id" column -->
@@ -17,7 +19,7 @@
                 {{/if}}
             {{/each}}
 
-            <button type="submit">Submit</button>
+            <button type="submit" id="submitButton">Submit</button>
         </form>
     </div>
 </div>
@@ -83,19 +85,39 @@
     }
 </style>
 
-<!-- Script for Popup -->  
-<script>  
+<!-- Script for Popup and AJAX Submission -->  
+<script>
 (() => {
     // Get modal and buttons
-    const modal = document.getElementById('addModal');
-    const openModalButton = document.getElementById('openModalButton');
+    const modal = document.getElementById('formModal');
     const closeModalButton = document.getElementById('closeModalButton');
+    const dataForm = document.getElementById('dataForm');
+    const formMode = document.getElementById('formMode');
+    const rowIdField = document.getElementById('rowId');
+    const formTitle = document.getElementById('formTitle');
 
-    // Open the popup and set its title
-    openModalButton.addEventListener("click", () => {
+    //Open modal for Create function
+    document.getElementById('openModalButton').addEventListener('click', () => {
+        formMode.value = "Create";
+        formTitle.innerText = "New {{tableName}}";
+        //dataForm.reset();
         modal.style.display = 'block';
-        modal.classList.remove("hidden");
     });
+
+    //Open modal for Update function
+    window.openUpdateForm = (rowData, rowId) => {
+        formMode.value = "Update";
+        formTitle.innerText = "Update {{tableName}}";
+        rowIdField.value = rowId;
+
+        //Fill form fields with row data
+        Object.keys(rowData).forEach(key => {
+            const field = document.getElementById(key);
+            if (field) field.value = rowData[key];
+        });
+
+        modal.style.display = 'block';
+    }
 
     // Close modal
     closeModalButton.addEventListener('click', () => {
@@ -109,21 +131,19 @@
         }
     });
 
+    // Handle the form submission using AJAX
     addForm.addEventListener('submit', function(event) {
-        event.preventDefault(); // Prevent default form submission
-
+        event.preventDefault();
         const formData = new FormData(addForm);
 
-        // Send the form data using Fetch API
-        fetch('/submit', {
+        fetch(formMode.value === "Create" ? '/submit' : '/update', {
             method: 'POST',
-            body: formData
+            body: formData,
         })
-        .then(response => response.text())  // Expect HTML content to return
+        .then(response => response.text()) 
         .then(data => {
-            // Replace the content of the table with the updated HTML
-            document.getElementById('tableContainer').innerHTML = data;
-            modal.style.display = 'none';  // Close the modal after successful submission
+            //document.getElementById('tableContainer').innerHTML = data;
+            modal.style.display = 'none';
         })
         .catch(error => {
             console.error('Error:', error);

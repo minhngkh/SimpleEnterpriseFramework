@@ -14,7 +14,7 @@
         </thead>  
         <tbody>  
             {{#each data}}  
-                <tr>  
+                <tr>
                     {{#each this}}  
                         <td>{{this}}</td>  
                     {{/each}}  
@@ -24,4 +24,5 @@
     </table>  
 </div>  
 
+<!-- Call form partial and pass necessary data -->
 {{> form tableName=tableName columns=columns }}

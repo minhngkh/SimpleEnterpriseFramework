@@ -117,6 +117,7 @@ public class Program
             }
         });
 
+
         string indexTemplatePath = Path.Combine(Directory.GetCurrentDirectory(), "templates", "index.hbs");
         string indexTemplate = File.ReadAllText(indexTemplatePath);
         var indexPage = Handlebars.Compile(indexTemplate);

@@ -1,4 +1,4 @@
-using System.Diagnostics;
+dousing System.Diagnostics;
 struct Role {
     [DbField("INTEGER", Unique = true, IsKey = true)]
     public int Id;
