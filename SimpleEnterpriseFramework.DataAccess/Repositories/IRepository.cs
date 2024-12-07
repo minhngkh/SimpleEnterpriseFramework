@@ -9,20 +9,20 @@ public interface IRepository {
 
     // DeleteRow("User", "Id = 1 AND (Name = 'tuong' OR Name = '123')")
     public abstract void DeleteRow(string table, string condition);
-    public abstract void DeleteRow(string table, dynamic condition);
+    public abstract void DeleteRow(string table, object condition);
 
     // UpdateRow("User", "")
     public abstract void UpdateRow(string table, string condition, string updateStatement);
-    public abstract IUpdateCommandBuilder UpdateRowBuilder();
+    public abstract void UpdateRow(string table, object? conditions, object updates);
 
-    public abstract void Add(string table, dynamic values);
+    public abstract void Add(string table, object values);
     public abstract void Add<T>(T obj);
 
-    public abstract List<object[]> Find(string table, dynamic? conditions = null);
-    public abstract List<T> Find<T>(dynamic? conditions = null) where T: struct;
+    public abstract List<object[]> Find(string table, object? conditions = null);
+    public abstract List<T> Find<T>(object? conditions = null) where T: struct;
 
-    public abstract object[]? FindOne(string table, dynamic conditions);
-    public abstract T? FindOne<T>(dynamic condition) where T: struct;
+    public abstract object[]? FindOne(string table, object conditions);
+    public abstract T? FindOne<T>(object condition) where T: struct;
 }
 
 public struct ColumnInfo {

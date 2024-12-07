@@ -1,3 +1,4 @@
+using System.Diagnostics;
 struct Role {
     [DbField("INTEGER", Unique = true, IsKey = true)]
     public int Id;
@@ -110,14 +111,11 @@ class SqliteExample {
         Console.WriteLine($"Id = {user?.Id}, Username = {user?.Username}, Password = {user?.Password}");
 
         Console.WriteLine("\nUpdate Id = 125 -> 124");
-        repo.UpdateRowBuilder()
-            .SetTable("User")
-            .SetCondition(new {Id = 125})
-            .SetUpdateStatement(new {Id = 124})
-            .Update();
+        repo.UpdateRow("User", new {Id = 125}, new {Id = 124});
 
         Console.WriteLine("\nFindOne Id = 124");
         user = repo.FindOne<User>(new {Id = 124});
+        Debug.Assert(user is not null);
         if (user is not null) {
             Console.WriteLine($"Id = {user?.Id}, Username = {user?.Username}, Password = {user?.Password}");
         } else {
