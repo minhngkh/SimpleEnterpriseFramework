@@ -1,28 +1,21 @@
-<div>  
-    <!-- Add New and Check Buttons -->  
-    <button onclick="window.location.href='/add?tableName={{tableName}}'">Add New {{tableName}}</button>  
-    <button id="openModalButton">Thêm {{tableName}}</button>  
-
-    <!-- Table -->  
-    <table>  
-        <thead>  
-            <tr>  
-                {{#each columns}}  
-                    <th>{{this}}</th>  
-                {{/each}}  
-            </tr>  
-        </thead>  
-        <tbody>  
-            {{#each data}}  
-                <tr>
-                    {{#each this}}  
-                        <td>{{this}}</td>  
-                    {{/each}}  
-                </tr>  
-            {{/each}}  
-        </tbody>  
-    </table>  
-</div>  
-
-<!-- Call form partial and pass necessary data -->
-{{> form tableName=tableName columns=columns }}
+<div>
+    <h1>{{tableName}}</h1>
+    <table>
+        <thead>
+            <tr>
+            {{#each columns}}
+                <th>{{this}}</th>
+            {{/each}}
+            </tr>
+        </thead>
+        <tbody>
+            {{#each data}}
+            <tr>
+                {{#each this}}
+                <td>{{this}}</td>
+                {{/each}}
+            </tr>
+            {{/each}}
+        </tbody>
+    </table>
+</div>
