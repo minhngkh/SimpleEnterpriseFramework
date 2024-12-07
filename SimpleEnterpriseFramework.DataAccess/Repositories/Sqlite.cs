@@ -285,7 +285,7 @@ public class SqliteRepository: IRepository {
                 for (int i = 0; i < conditionPairs.Length; i++) {
                     var (field, val) = conditionPairs[i];
                     if (i > 0) commandBuilder.Append("AND ");
-                    commandBuilder.Append($"{field} = 123 ");
+                    commandBuilder.Append($"{field} = @val{i} ");
                     command.Parameters.AddWithValue($"@val{i}", val);
                 }
             }

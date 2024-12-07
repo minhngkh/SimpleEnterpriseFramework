@@ -1,59 +1,30 @@
 using HandlebarsDotNet;
 using System.IO;
-using System.Web;
-using System.Diagnostics;
-using Microsoft.Extensions.Primitives;
+using SimpleEnterpriseFramework.Membership;
 
-struct Product {
-    [DbField("INTEGER", Unique = true, IsKey = true)]
-    public int Id;
-
-    [DbField("TEXT", Nullable = false)]
-    public string Name;
-
-    [DbField("REAL", Nullable = false)]
-    public float Price;
-}
-
-struct User {
-    [DbField("INTEGER", Unique = true, IsKey = true)]
-    public int Id;
-
-    [DbField("TEXT", Unique = true, Nullable = false)]
-    public string Username;
-
-    [DbField("TEXT", Unique = true, Nullable = false)]
-    public string Email;
-
-    [DbField("TEXT")]
-    public string? Phone;
-
-    [DbField("TEXT", Nullable = false)]
-    public string Password;
-}
 
 public class Program {
     public static void Main(string[] args) {
-        IRepository repo = new SqliteRepository("Data Source=test.db");
-        List<String> tableNames = repo.ListTables();
+        MembershipRepository repo = new MembershipRepository();
+        // List<String> tableNames = repo.ListTables();
 
-        repo.CreateTable<User>(true);
-        repo.CreateTable<Product>(true);
-
-        for (int i = 0; i < 15; i++) {
-            repo.Add<Product>(new Product() {
-                Id = i,
-                Name = $"product{i}",
-                Price = i*1000.0f,
-            });
-            repo.Add<User>(new User() {
-                Id = i,
-                Username = $"user{i}",
-                Email = $"example{i}@gmail.com",
-                Phone = i%2 == 0 ? null : String.Concat(Enumerable.Repeat($"{i}", 10)),
-                Password = $"password{i}"
-            });
-        }
+        // repo.CreateUserTable();
+        // repo.CreateRoleTable();
+        // repo.AddRole("admin");
+        // repo.AddRole("user");
+        // repo.AddUser("anhhoang123", "123", "admin");
+        // repo.DeleteUser("anhhoang");
+           repo.modifyUser("anhhoang123", "anh", "456", "user");
+        
+        // for (int i = 0; i < 15; i++) {
+        //     repo.Add<User>(new User() {
+        //         Id = i,
+        //         Username = $"user{i}",
+        //         Email = $"example{i}@gmail.com",
+        //         Phone = i%2 == 0 ? null : String.Concat(Enumerable.Repeat($"{i}", 10)),
+        //         Password = $"password{i}"
+        //     });
+        // }
 
         object getTableParameters(string tableName) {
             return new {
