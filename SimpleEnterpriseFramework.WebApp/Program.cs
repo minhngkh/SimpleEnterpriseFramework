@@ -7,6 +7,8 @@ using System.Text.Json.Serialization;
 using Microsoft.Extensions.Primitives;
 using Microsoft.Data.Sqlite;
 
+using SimpleEnterpriseFramework.Membership;
+
 
 #nullable enable
 
@@ -116,7 +118,6 @@ public class Program
                 writer.WriteSafeString(context);
             }
         });
-
 
         string indexTemplatePath = Path.Combine(Directory.GetCurrentDirectory(), "templates", "index.hbs");
         string indexTemplate = File.ReadAllText(indexTemplatePath);
