@@ -26,7 +26,7 @@ struct User {
 }
 public class MembershipRepository
 {
-    
+
     IRepository _repository = new SqliteRepository("Data Source=new.db");
     public void CreateUserTable()
     {
@@ -63,6 +63,7 @@ public class MembershipRepository
     public void AddUser(String userName, String password, String roleName)
     {
         List<Role> roles =  _repository.Find<Role>(new {Name = roleName});
+        Console.WriteLine(roleName);
         if (roles.Count == 0)
         {
             Console.WriteLine("Role name does not exist.");
@@ -72,7 +73,6 @@ public class MembershipRepository
         {
             _repository.Add(new User()
             {
-                Id = RandomNumberGenerator.GetInt32(0, int.MaxValue),
                 Username = userName,
                 Password = password,
                 RoleId = roles[0].Id,
@@ -96,7 +96,6 @@ public class MembershipRepository
         {
             _repository.Add(new Role()
             {
-                Id = RandomNumberGenerator.GetInt32(0, int.MaxValue),
                 Name = roleName,
             });
             Console.WriteLine("Role added successfully.");
@@ -163,7 +162,7 @@ public class MembershipRepository
                     Password = password,
                     RoleId = roles[0].Id,
                 });
-                
+
             Console.WriteLine("User updated successfully.");
         }
         catch(Exception ex)
@@ -171,5 +170,5 @@ public class MembershipRepository
             Console.WriteLine($"Could not modify user.: {ex.Message}");
         }
     }
-    
+
 }

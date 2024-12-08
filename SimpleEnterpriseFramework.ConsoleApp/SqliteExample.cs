@@ -1,4 +1,6 @@
 using System.Diagnostics;
+using SimpleEnterpriseFramework.Membership;
+
 struct Role {
     [DbField("INTEGER", Unique = true, IsKey = true)]
     public int Id;
@@ -22,7 +24,7 @@ struct User {
 }
 
 class SqliteExample {
-    public static void Main(string[] args) {
+    public static void Main2(string[] args) {
         SqliteRepository repo = new("Data Source=test.db");
 
         repo.CreateTable<User>(true);
@@ -121,5 +123,16 @@ class SqliteExample {
         } else {
             Console.WriteLine("Not found");
         }
+    }
+
+    public static void Main(string[] args) {
+        MembershipRepository membershipRepo = new();
+        membershipRepo.CreateUserTable();
+        membershipRepo.CreateRoleTable();
+        membershipRepo.AddRole("user");
+        membershipRepo.AddRole("admin");
+
+        membershipRepo.AddUser("Tuong", "123321123", "admin");
+        membershipRepo.AddUser("Tuong2", "3321123", "user");
     }
 }
