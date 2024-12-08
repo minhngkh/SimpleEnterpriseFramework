@@ -1,27 +1,26 @@
-<div>  
-    <!-- Add New and Check Buttons -->  
-    <button onclick="window.location.href='/add?tableName={{tableName}}'">Add New {{tableName}}</button>  
-    <button id="openModalButton">Thêm {{tableName}}</button>  
+<div>
+    <!-- Add New and Check Buttons -->
+    <button id="openModalButton">Add new {{tableName}}</button>
 
-    <!-- Table -->  
-    <table>  
-        <thead>  
-            <tr>  
-                {{#each columns}}  
-                    <th>{{this}}</th>  
-                {{/each}}  
-            </tr>  
-        </thead>  
-        <tbody>  
-            {{#each data}}  
-                <tr>  
-                    {{#each this}}  
-                        <td>{{this}}</td>  
-                    {{/each}}  
-                </tr>  
-            {{/each}}  
-        </tbody>  
-    </table>  
-</div>  
+    <!-- Table -->
+    <table>
+        <thead>
+            <tr>
+                {{#each columns}}
+                    <th>{{this}}</th>
+                {{/each}}
+            </tr>
+        </thead>
+        <tbody>
+            {{#each data}}
+                <tr onClick="(() => window.openUpdateForm(this))();return false;">
+                    {{#each this}}
+                        <td id="{{@key}}">{{this}}</td>
+                    {{/each}}
+                </tr>
+            {{/each}}
+        </tbody>
+    </table>
+</div>
 
 {{> form tableName=tableName columns=columns }}

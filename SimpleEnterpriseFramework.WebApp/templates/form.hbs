@@ -8,7 +8,7 @@
             <!-- Hidden field to pass the table name and mode (Create/Update) -->
             <input type="hidden" name="tableName" value="{{tableName}}">
             <input type="hidden" name="formMode" id="formMode" value="Create">
-            <input type="hidden" name="rowId" id="rowId" value="">
+            <input style="display: none;" type="number" name="Id" id="rowId" value="">
 
             {{#each columns}}
                 {{#if (neq this "Id")}} <!-- Exclude the "Id" column -->
@@ -88,11 +88,22 @@
 <!-- Script for Popup -->  
 <script>
 (() => {
+    function formDeserialize(form, data) {
+        for (const input of form.getElementsByTagName("input")) {
+            if (input.type === 'hidden') {
+                continue;
+            } else if (input.type === 'checkbox') {
+                input.value = !!data[input.name];
+            } else {
+                input.value = data[input.name];
+            }
+        }
+    }
+
     const modal = document.getElementById('formModal');
     const closeModalButton = document.getElementById('closeModalButton');
     const dataForm = document.getElementById('dataForm');
     const formMode = document.getElementById('formMode');
-    const rowIdField = document.getElementById('rowId');
     const formTitle = document.getElementById('formTitle');
 
     // Open modal for Create mode
@@ -104,16 +115,19 @@
     });
 
     // Open modal for Update mode (called from table)
-    window.openUpdateForm = (rowData, rowId) => {
+    window.openUpdateForm = (element) => {
         formMode.value = "Update";
-        formTitle.innerText = "Update {{tableName}}";
-        rowIdField.value = rowId;
-
-        // Fill form fields with row data
-        Object.keys(rowData).forEach(key => {
-            const field = document.getElementById(key);
-            if (field) field.value = rowData[key];
-        });
+        const rowData = {};
+        const formData = {};
+        for (var col of element.getElementsByTagName("td")) {
+            rowData[col.id] = col.textContent;
+        }
+        console.log(rowData);
+        {{#each columns}}
+            formData["{{this}}"] = rowData[{{@key}}];
+        {{/each}}
+        console.log(formData);
+        formDeserialize(dataForm, formData);
 
         modal.style.display = 'block';
     };
@@ -138,10 +152,13 @@
             method: 'POST',
             body: formData
         })
-        .then(response => response.text())
-        .then(data => {
-            //document.getElementById('tableContainer').innerHTML = data;
+        .then(async response => {
             modal.style.display = 'none';
+            if (response.status == 200) { 
+                load_table("{{tableName}}");
+            } else {
+                console.log(await response.text());
+            }
         })
         .catch(error => {
             console.error('Error:', error);
