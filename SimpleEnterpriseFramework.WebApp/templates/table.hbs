@@ -1,8 +1,6 @@
 <div>
-    <!-- Add New and Check Buttons -->
     <button id="openModalButton">Add new {{tableName}}</button>
-
-    <!-- Table -->
+    <p>Double-click a row to edit it.</p>
     <table>
         <thead>
             <tr>
@@ -13,14 +11,59 @@
         </thead>
         <tbody>
             {{#each data}}
-                <tr onClick="(() => window.openUpdateForm(this))();return false;">
+                <tr ondblclick="(() => window.openUpdateForm(this))();">
                     {{#each this}}
-                        <td id="{{@key}}">{{this}}</td>
+                        <td data-column="{{@key}}">{{this}}</td>
                     {{/each}}
+                    <td class="no-border">
+                        <button  onclick="window.deleteRow('{{lookup ../this 'Id'}}')">Delete</button>
+                    </td>
                 </tr>
             {{/each}}
         </tbody>
     </table>
 </div>
 
-{{> form tableName=tableName columns=columns }}
+<style>
+    table {
+        border-collapse: collapse;
+        width: 100%;
+    }
+    th, td {
+        border: 1px solid #ddd; /* Default border for table cells */
+        padding: 8px;
+        text-align: left;
+    }
+    .no-border {
+        border-top: none !important;
+        border-bottom: none !important;
+        border-right: none !important;
+    }
+</style>
+
+<script>
+    window.deleteRow = function (id) {
+        const tableName = new URLSearchParams(window.location.search).get('tableName');
+        if (!tableName || !id) {
+            alert('Invalid table name or ID.');
+            return;
+        }
+        const formData = new FormData();
+        formData.append('tableName', tableName);
+        formData.append('Id', id);
+
+        fetch('/delete', {
+            method: 'POST',
+            body: formData,
+        })
+            .then(response => {
+                if (response.ok) {
+                    alert('Row deleted successfully.');
+                    location.reload();
+                } else {
+                    response.text().then(text => alert('Error: ' + text));
+                }
+            })
+            .catch(error => alert('Request failed: ' + error));
+    };
+</script>

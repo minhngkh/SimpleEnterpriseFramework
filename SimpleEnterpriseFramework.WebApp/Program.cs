@@ -197,7 +197,7 @@ public class Program
             }
         });
 
-        app.MapPost("/submit", async (HttpContext context) =>
+        app.MapPost("/create", async (HttpContext context) =>
         {
             var formData = await context.Request.ReadFormAsync();
             string? tableName = formData["tableName"];
@@ -252,6 +252,35 @@ public class Program
                 return Results.Problem($"Error adding data: {ex.Message}");
             }
         });
+        app.MapPost("/delete", async (HttpContext context) =>
+        {
+            var formData = await context.Request.ReadFormAsync();
+            string? tableName = formData["tableName"];
+
+            if (string.IsNullOrEmpty(tableName))
+            {
+                return Results.BadRequest("Table name is missing.");
+            }
+
+            if (!formData.ContainsKey("Id"))
+            {
+                return Results.BadRequest("Id is missing.");
+            }
+
+            int id = int.Parse(formData["Id"].ToString());
+
+            try
+            {
+                repo.DeleteRow(tableName, new { Id = id });
+                return Results.Ok();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex);
+                return Results.Problem($"Error deleting data: {ex.Message}");
+            }
+        });
+
         app.Run();
     }
 }

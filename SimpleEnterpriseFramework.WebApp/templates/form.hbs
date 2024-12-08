@@ -148,7 +148,7 @@
         event.preventDefault();
         const formData = new FormData(dataForm);
 
-        fetch(formMode.value === "Create" ? '/submit' : '/update', {
+        fetch(formMode.value === "Create" ? '/create' : '/update', {
             method: 'POST',
             body: formData
         })
