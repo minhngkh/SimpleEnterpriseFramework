@@ -26,8 +26,8 @@ struct User {
 }
 public class MembershipRepository
 {
-
     IRepository _repository = new SqliteRepository("Data Source=new.db");
+    PasswordHasher _hasher = new PasswordHasher();
     public void CreateUserTable()
     {
         // Create user table by calling repository
@@ -74,7 +74,7 @@ public class MembershipRepository
             _repository.Add(new User()
             {
                 Username = userName,
-                Password = password,
+                Password = _hasher.HashPassword(password),
                 RoleId = roles[0].Id,
             });
             Console.WriteLine("User added successfully.");
@@ -124,6 +124,7 @@ public class MembershipRepository
             Console.WriteLine($"Could not delete user.: {ex.Message}");
         }
     }
+    
 
     public void DeleteRole(String roleName)
     {
@@ -159,7 +160,7 @@ public class MembershipRepository
                 new
                 {
                     Username = userName,
-                    Password = password,
+                    Password = _hasher.HashPassword(password),
                     RoleId = roles[0].Id,
                 });
 
@@ -170,5 +171,4 @@ public class MembershipRepository
             Console.WriteLine($"Could not modify user.: {ex.Message}");
         }
     }
-
 }

@@ -126,13 +126,27 @@ class SqliteExample {
     }
 
     public static void Main(string[] args) {
-        MembershipRepository membershipRepo = new();
-        membershipRepo.CreateUserTable();
-        membershipRepo.CreateRoleTable();
-        membershipRepo.AddRole("user");
-        membershipRepo.AddRole("admin");
+        // MembershipRepository membershipRepo = new();
+        // membershipRepo.CreateUserTable();
+        // membershipRepo.CreateRoleTable();
+        // membershipRepo.AddRole("user");
+        // membershipRepo.AddRole("admin");
+        //
+        // membershipRepo.AddUser("Tuong", "123321123", "admin");
+        // membershipRepo.AddUser("Tuong2", "3321123", "user");
+        PasswordHasher passwordHasher = new PasswordHasher();
+        String hashedPass = passwordHasher.HashPassword("anhhoang123");
+        Console.WriteLine("Hashed Password: " + hashedPass);
+        
+        bool isPasswordValid = passwordHasher.VerifyPassword("anhhoang12", hashedPass);
 
-        membershipRepo.AddUser("Tuong", "123321123", "admin");
-        membershipRepo.AddUser("Tuong2", "3321123", "user");
+        if (isPasswordValid)
+        {
+            Console.WriteLine("Password is valid.");
+        }
+        else
+        {
+            Console.WriteLine("Invalid password.");
+        }
     }
 }

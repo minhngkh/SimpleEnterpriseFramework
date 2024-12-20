@@ -21,8 +21,6 @@ static class Utils {
                 .ToArray();
         }
     }
-
-
 }
 
 [AttributeUsage(AttributeTargets.Field)]

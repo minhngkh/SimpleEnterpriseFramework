@@ -82,8 +82,10 @@
 
                 {{#each columns}}
                 <div class="form-group">
-                    <label for="{{this}}">{{this}}:</label>
-                    <input type="text" name="{{this}}" id="{{this}}" required>
+                    {{#if (neq this "id")}}
+                        <label for="{{this}}">{{this}}:</label>
+                        <input type="text" name="{{this}}" id="{{this}}" required>
+                    {{/if}}
                 </div>
                 {{/each}}
 
