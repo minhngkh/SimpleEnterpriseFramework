@@ -14,6 +14,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SimpleEnterpriseFramework.W
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SimpleEnterpriseFramework.Tests", "SimpleEnterpriseFramework.Tests\SimpleEnterpriseFramework.Tests.csproj", "{DC4E6049-E6FB-4CC7-995D-3B7328B054B7}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SimpleEnterpriseFramework.Core", "SimpleEnterpriseFramework.Core\SimpleEnterpriseFramework.Core.csproj", "{857D486B-E2C3-4023-908C-C8C90B47DC61}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -48,5 +50,9 @@ Global
 		{DC4E6049-E6FB-4CC7-995D-3B7328B054B7}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DC4E6049-E6FB-4CC7-995D-3B7328B054B7}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{DC4E6049-E6FB-4CC7-995D-3B7328B054B7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{857D486B-E2C3-4023-908C-C8C90B47DC61}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{857D486B-E2C3-4023-908C-C8C90B47DC61}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{857D486B-E2C3-4023-908C-C8C90B47DC61}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{857D486B-E2C3-4023-908C-C8C90B47DC61}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
