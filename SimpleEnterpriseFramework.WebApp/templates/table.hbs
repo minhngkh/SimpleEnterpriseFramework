@@ -1,6 +1,9 @@
 <div>
+    <!-- Add New and Check Buttons -->
     <button id="openModalButton">Add new {{tableName}}</button>
     <p>Double-click a row to edit it.</p>
+
+    <!-- Table -->
     <table data-table-name="{{tableName}}">
         <thead>
             <tr>
@@ -11,12 +14,12 @@
         </thead>
         <tbody>
             {{#each data}}
-                <tr data-id="{{Id}}" ondblclick="(() => window.openUpdateForm(this))();">
+                <tr data-id="{{Id}}" ondblclick="(() => window.openUpdateForm(this))(); return false;">
                     {{#each this}}
-                        <td data-column="{{@key}}">{{this}}</td>
+                        <td id="{{@key}}">{{this}}</td>
                     {{/each}}
                     <td class="no-border">
-                        <button onclick="window.deleteRow(this)">Delete</button>
+                        <button onclick="(() => window.deleteRow(this))(); return false;">Delete</button>
                     </td>
                 </tr>
             {{/each}}
@@ -24,13 +27,15 @@
     </table>
 </div>
 
+{{> form tableName=tableName columns=columns }}
+
 <style>
     table {
         border-collapse: collapse;
         width: 100%;
     }
     th, td {
-        border: 1px solid #ddd; /* Default border for table cells */
+        border: 1px solid #ddd;
         padding: 8px;
         text-align: left;
     }
@@ -40,67 +45,4 @@
         border-right: none !important;
     }
 </style>
-
-<script>
-    window.deleteRow = async (element) => {
-        try {
-            const row = element.closest('tr'); // Get the parent row of the button
-            if (!row) {
-                console.error("Could not find the parent row.");
-                return;
-            }
-
-            const tableContainer = row.closest('table');
-            if (!tableContainer) {
-                console.error("Could not find the parent table.");
-                return;
-            }
-
-            const tableName = tableContainer.getAttribute('data-table-name');
-            if (!tableName) {
-                console.error("Table name is missing.");
-                return;
-            }
-
-            console.log("Row element:", row);
-
-            // Extract data from the first column and assign it as "Id"
-            const firstColumn = row.querySelector('td[data-column]');
-            if (!firstColumn) {
-                console.error("First column data not found.");
-                return;
-            }
-
-            const rowData = { Id: firstColumn.textContent.trim() };
-
-            console.log("Row Data (only Id):", rowData);
-
-            if (confirm('Are you sure you want to delete this row?')) {
-                // Create FormData with rowData
-                const formData = new FormData();
-                formData.append('tableName', tableName);
-                formData.append('Id', rowData.Id);
-
-                // Send a POST request to delete the row
-                const response = await fetch('/delete', {
-                    method: 'POST',
-                    body: formData,
-                });
-
-                if (response.ok) {
-                    alert('Row deleted successfully.');
-                    load_table(tableName); // Reload table data (ensure this function exists)
-                } else {
-                    const errorMessage = await response.text();
-                    console.error('Error:', errorMessage);
-                    alert(`Error deleting row: ${errorMessage}`);
-                }
-            }
-        } catch (error) {
-            console.error('Unexpected error:', error);
-            alert(`Unexpected error: ${error.message}`);
-        }
-    };
-</script>
-
 
