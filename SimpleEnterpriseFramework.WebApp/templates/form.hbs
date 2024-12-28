@@ -2,7 +2,7 @@
 <div id="formModal" class="modal">
     <div class="modal-content">
         <span class="close" id="closeModalButton">&times;</span>
-        <h2 id="formTitle">New {{tableName}}</h2>
+        <h2 id="formTitle"></h2>
 
         <form id="dataForm">
             <!-- Hidden field to pass the table name and mode (Create/Update) -->
@@ -19,7 +19,7 @@
                 {{/if}}
             {{/each}}
 
-            <button type="submit" id="submitButton">Submit</button>
+            <button class="submitButton" type="submit" id="submitButton">Submit</button>
         </form>
     </div>
 </div>
@@ -40,12 +40,16 @@
     }
 
     .modal-content {
-        background-color: #fefefe;
+        background-color: #3b3535;
         margin: 15% auto; /* Centered */
         padding: 20px;
-        border: 1px solid #888;
+        border: 1px solid #00ffee;
         width: 50%;
         border-radius: 8px;
+    }
+    
+    .formTitle {
+        margin-bottom: 2em
     }
 
     .close {
@@ -76,13 +80,20 @@
         width: 100%;
         padding: 0.5em;
         box-sizing: border-box;
+        color: black;
     }
 
-    button {
+    .submitButton {
         padding: 0.5em 1em;
+        border: 1px solid #00ffee;
+        background-color: rgb(2, 248, 2);
+        color: white;
+        font-weight: bold;
         margin-top: 1em;
         cursor: pointer;
+        border-radius: 8px;
     }
+
 </style>
 
 <!-- Script for Popup -->  
@@ -117,6 +128,7 @@
     // Open modal for Update mode (called from table)
     window.openUpdateForm = (element) => {
         formMode.value = "Update";
+        formTitle.innerText = "Edit {{tableName}}";
         const rowData = {};
         const formData = {};
         for (var col of element.getElementsByTagName("td")) {
@@ -230,6 +242,29 @@
         .catch(error => {
             console.error('Error:', error);
             alert('There was an error submitting the form.');
+        });
+    });
+
+    // Function to filter table rows based on the search query
+     const searchField = document.getElementById("searchField");
+    const table = document.querySelector("table");  // Select the table
+    const tableBody = table.querySelector("tbody");  // Select the tbody
+
+    searchField.addEventListener("input", (event) => {
+        const query = event.target.value;
+        const lowerCaseQuery = query.toLowerCase();
+
+        const tableRows = Array.from(tableBody.querySelectorAll("tr"));
+
+        tableRows.forEach((row) => {
+            const rowText = Array.from(row.querySelectorAll("td"))
+                .map((cell) => cell.textContent.toLowerCase())
+                .join(" ");
+            if (rowText.includes(lowerCaseQuery)) {
+                row.style.display = ""; // Show the row
+            } else {
+                row.style.display = "none"; // Hide the row
+            }
         });
     });
 })();
