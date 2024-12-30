@@ -1,0 +1,6 @@
+@SimpleEnterpriseFramework.AppDemo_HostAddress = http://localhost:5126
+
+GET {{SimpleEnterpriseFramework.AppDemo_HostAddress}}/
+Accept: application/json
+
+###

@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User List</title>
+    <style>
+* {
+    color: white;
+    margin: 0px;
+    padding: 0px;
+}
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+th, td {
+    border: 1px solid #ccc;
+    padding: 8px;
+    text-align: left;
+}
+th {
+    background-color: #303030;
+}
+body {
+    display: flex;
+    height: 100vh;
+    width: 100vw;
+    justify-content: start;
+    align-self: center;
+    background-color: #101010;
+}
+.database {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: row;
+    justify-content: start;
+    padding: 10px;
+}
+
+.database .tables-navigation {
+    background-color: #303030;
+    flex-grow: 0;
+    flex-basis: 6em;
+}
+
+.database .tables-navigation .header {
+    text-align: center;
+    border: 1px solid #ccc;
+    padding: 8px;
+    font-size: 1em;
+}
+
+.database .tables-navigation ul {
+    list-style-type: none;
+}
+.database .tables-navigation ul li {
+    padding: 8px;
+    text-align: start;
+    cursor: pointer;
+}
+
+.database .tables-navigation ul li:hover {
+    font-weight: bolder;
+}
+.database .tables-navigation .current {
+    font-weight: bolder;
+    cursor: default !important;
+}
+
+.database .table-data {
+    flex-grow: 1;
+    margin-left: 10px;
+}
+    </style>
+</head>
+<body>
+    <div class="database">
+        <div class="tables-navigation">
+            <h3 class="header">Tables</h3>
+            <ul>
+            {{#each tableNames}}
+                <li id="tableName-{{this}}"
+                    onClick="(() => load_table('{{this}}'))();return false;" >{{this}}</li>
+            {{/each}}
+            </ul>
+        </div>
+        <div id="table-data" class="table-data">
+        </div>
+    </div>
+</body>
+<script>
+    let currentTable = null;
+    function load_table(tableName) {
+        fetch(`${window.location.origin}/table/${tableName}`).then(async response => {
+            const responseText = await response.text();
+            if (response.status == 200) { 
+                if (currentTable !== null) {
+                    currentTable.classList.remove("current");
+                }
+                currentTable = document.getElementById(`tableName-${tableName}`);
+                currentTable.classList.add("current");
+                // console.log(document.getElementById("table-data"));
+                const table = document.getElementById("table-data")
+                table.innerHTML = '';
+                table.insertAdjacentHTML("beforeend", responseText);
+                const tableScripts = table.getElementsByTagName("script");
+                for (const script of tableScripts) {
+                    script.parentNode.removeChild(script);
+                    var newScript = document.createElement("script");
+                    if (script.src) {
+                        newScript.src = script.src;
+                    } else if (script.textContent) {
+                        newScript.textContent = script.textContent;
+                    } else if (script.innerText) {
+                        newScript.innerText = script.innerText;
+                    }
+                    document.body.appendChild(newScript);
+                    document.body.removeChild(newScript);
+                }
+            } else {
+                alert(response.statusText);
+            }
+        }).catch(err => {
+            alert(err);
+        });
+    }
+</script>
+</html>
