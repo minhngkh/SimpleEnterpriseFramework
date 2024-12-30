@@ -2,13 +2,13 @@
 <div id="formModal" class="modal">
     <div class="modal-content">
         <span class="close" id="closeModalButton">&times;</span>
-        <h2 id="formTitle">New {{tableName}}</h2>
+        <h2 id="formTitle"></h2>
 
         <form id="dataForm">
             <!-- Hidden field to pass the table name and mode (Create/Update) -->
             <input type="hidden" name="tableName" value="{{tableName}}">
             <input type="hidden" name="formMode" id="formMode" value="Create">
-            <input type="hidden" name="rowId" id="rowId" value="">
+            <input style="display: none;" type="number" name="Id" id="rowId" value="">
 
             {{#each columns}}
                 {{#if (neq this "Id")}} <!-- Exclude the "Id" column -->
@@ -19,7 +19,7 @@
                 {{/if}}
             {{/each}}
 
-            <button type="submit" id="submitButton">Submit</button>
+            <button class="submitButton" type="submit" id="submitButton">Submit</button>
         </form>
     </div>
 </div>
@@ -40,12 +40,16 @@
     }
 
     .modal-content {
-        background-color: #fefefe;
+        background-color: #3b3535;
         margin: 15% auto; /* Centered */
         padding: 20px;
-        border: 1px solid #888;
+        border: 1px solid #00ffee;
         width: 50%;
         border-radius: 8px;
+    }
+    
+    .formTitle {
+        margin-bottom: 2em
     }
 
     .close {
@@ -76,23 +80,41 @@
         width: 100%;
         padding: 0.5em;
         box-sizing: border-box;
+        color: black;
     }
 
-    button {
+    .submitButton {
         padding: 0.5em 1em;
+        border: 1px solid #00ffee;
+        background-color: rgb(2, 248, 2);
+        color: white;
+        font-weight: bold;
         margin-top: 1em;
         cursor: pointer;
+        border-radius: 8px;
     }
+
 </style>
 
 <!-- Script for Popup -->  
 <script>
 (() => {
+    function formDeserialize(form, data) {
+        for (const input of form.getElementsByTagName("input")) {
+            if (input.type === 'hidden') {
+                continue;
+            } else if (input.type === 'checkbox') {
+                input.value = !!data[input.name];
+            } else {
+                input.value = data[input.name];
+            }
+        }
+    }
+
     const modal = document.getElementById('formModal');
     const closeModalButton = document.getElementById('closeModalButton');
     const dataForm = document.getElementById('dataForm');
     const formMode = document.getElementById('formMode');
-    const rowIdField = document.getElementById('rowId');
     const formTitle = document.getElementById('formTitle');
 
     // Open modal for Create mode
@@ -104,19 +126,90 @@
     });
 
     // Open modal for Update mode (called from table)
-    window.openUpdateForm = (rowData, rowId) => {
+    window.openUpdateForm = (element) => {
         formMode.value = "Update";
-        formTitle.innerText = "Update {{tableName}}";
-        rowIdField.value = rowId;
-
-        // Fill form fields with row data
-        Object.keys(rowData).forEach(key => {
-            const field = document.getElementById(key);
-            if (field) field.value = rowData[key];
-        });
+        formTitle.innerText = "Edit {{tableName}}";
+        const rowData = {};
+        const formData = {};
+        for (var col of element.getElementsByTagName("td")) {
+            rowData[col.id] = col.textContent;
+        }
+        console.log(rowData);
+        {{#each columns}}
+            formData["{{this}}"] = rowData[{{@key}}];
+        {{/each}}
+        console.log(formData);
+        formDeserialize(dataForm, formData);
 
         modal.style.display = 'block';
     };
+
+    // Delete row
+    window.deleteRow = (element) => {
+        try {
+            const row = element.closest('tr'); // Get the parent row of the button
+            if (!row) {
+                console.error("Could not find the parent row.");
+                return;
+            }
+
+            const tableContainer = row.closest('table');
+            if (!tableContainer) {
+                console.error("Could not find the parent table.");
+                return;
+            }
+
+            const tableName = tableContainer.getAttribute('data-table-name');
+            if (!tableName) {
+                console.error("Table name is missing.");
+                return;
+            }
+
+            console.log("Row element:", row);
+
+            // Extract data from the first column and assign it as "Id"
+            const firstColumn = row.querySelector('td[id]');
+            if (!firstColumn) {
+                console.error("First column data not found.");
+                return;
+            }
+
+            const rowData = { Id: firstColumn.textContent.trim() };
+
+            console.log("Row Data (only Id):", rowData);
+
+            if (confirm('Are you sure you want to delete this row?')) {
+                // Create FormData with rowData
+                const formData = new FormData();
+                formData.append('tableName', tableName);
+                formData.append('Id', rowData.Id);
+
+                // Send a POST request to delete the row
+                fetch('/delete', {
+                    method: 'POST',
+                    body: formData,
+                })
+                .then(response => {
+                    if (response.ok) {
+                        alert('Row deleted successfully.');
+                        load_table(tableName); // Reload table data (ensure this function exists)
+                    } else {
+                        return response.text().then(errorMessage => {
+                            console.error('Error:', errorMessage);
+                            alert(`Error deleting row: ${errorMessage}`);
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error('Unexpected error:', error);
+                    alert(`Unexpected error: ${error.message}`);
+                });
+            }
+        } catch (error) {
+            console.error('Unexpected error:', error);
+            alert(`Unexpected error: ${error.message}`);
+        }
+    }
 
     // Close modal
     closeModalButton.addEventListener('click', () => {
@@ -134,18 +227,44 @@
         event.preventDefault();
         const formData = new FormData(dataForm);
 
-        fetch(formMode.value === "Create" ? '/submit' : '/update', {
+        fetch(formMode.value === "Create" ? '/create' : '/update', {
             method: 'POST',
             body: formData
         })
-        .then(response => response.text())
-        .then(data => {
-            //document.getElementById('tableContainer').innerHTML = data;
+        .then(async response => {
             modal.style.display = 'none';
+            if (response.status == 200) { 
+                load_table("{{tableName}}");
+            } else {
+                console.log(await response.text());
+            }
         })
         .catch(error => {
             console.error('Error:', error);
             alert('There was an error submitting the form.');
+        });
+    });
+
+    // Function to filter table rows based on the search query
+     const searchField = document.getElementById("searchField");
+    const table = document.querySelector("table");  // Select the table
+    const tableBody = table.querySelector("tbody");  // Select the tbody
+
+    searchField.addEventListener("input", (event) => {
+        const query = event.target.value;
+        const lowerCaseQuery = query.toLowerCase();
+
+        const tableRows = Array.from(tableBody.querySelectorAll("tr"));
+
+        tableRows.forEach((row) => {
+            const rowText = Array.from(row.querySelectorAll("td"))
+                .map((cell) => cell.textContent.toLowerCase())
+                .join(" ");
+            if (rowText.includes(lowerCaseQuery)) {
+                row.style.display = ""; // Show the row
+            } else {
+                row.style.display = "none"; // Hide the row
+            }
         });
     });
 })();
