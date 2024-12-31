@@ -1,4 +1,4 @@
-using SEF.Repository;
+namespace SEF.Repository;
 using Microsoft.Data.Sqlite;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;

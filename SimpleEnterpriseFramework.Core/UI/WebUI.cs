@@ -1,12 +1,16 @@
-using SEF.UI;
-using SEF.Repository;
+namespace SEF.UI;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
 using HandlebarsDotNet;
+using SEF.Repository;
+using System.Reflection;
 using System.Text;
 using System.IO.Pipelines;
 using System.Collections;
 using Newtonsoft.Json;
 
 public class WebUI: IUI {
+    string outputDirectory;
     IRepository repo;
 
     WebApplication app;
@@ -16,7 +20,8 @@ public class WebUI: IUI {
     public WebUI(IRepository repo) {
         this.repo = repo;
         this.app = WebApplication.Create([]);
-        string tableTemplatePath = Path.Combine(Directory.GetCurrentDirectory(), "Web", "Templates", "table.hbs");
+        this.outputDirectory = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!;
+        string tableTemplatePath = Path.Combine(outputDirectory, "UI", "Templates", "table.hbs");
         string tableTemplate = File.ReadAllText(tableTemplatePath);
         this.tableTemplate = Handlebars.Compile(tableTemplate);
         this.tableNames = new();
@@ -29,7 +34,7 @@ public class WebUI: IUI {
             }
         });
 
-        string formTemplatePath = Path.Combine(Directory.GetCurrentDirectory(), "Web", "Templates", "form.hbs");
+        string formTemplatePath = Path.Combine(outputDirectory, "UI", "Templates", "form.hbs");
         string formTemplate = File.ReadAllText(formTemplatePath);
         Handlebars.RegisterTemplate("form", formTemplate);
 
@@ -110,7 +115,7 @@ public class WebUI: IUI {
     }
 
     public void Start() {
-        string indexTemplatePath = Path.Combine(Directory.GetCurrentDirectory(), "Web", "Templates", "index.hbs");
+        string indexTemplatePath = Path.Combine(outputDirectory, "UI", "Templates", "index.hbs");
         string indexTemplate = File.ReadAllText(indexTemplatePath);
         HandlebarsTemplate<object, object> indexPage = Handlebars.Compile(indexTemplate);
         this.app.MapGet("/", (HttpContext context) =>
