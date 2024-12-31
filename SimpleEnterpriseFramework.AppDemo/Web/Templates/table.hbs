@@ -33,7 +33,7 @@
                         <td id="{{@key}}">{{this}}</td>
                     {{/each}}
                     <td class="no-border">
-                        <button class="delete-button" onclick="(() => window.deleteRow(this))(); return false;">Delete</button>
+                        <button class="delete-button" onclick="(() => window.deleteRow(this?.parentElement?.parentElement))(); return false;">Delete</button>
                     </td>
                 </tr>
             {{/each}}
@@ -91,4 +91,3 @@
         font-weight: bold;
     }
 </style>
-

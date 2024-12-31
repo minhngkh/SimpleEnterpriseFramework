@@ -1,7 +1,7 @@
 namespace SEF.UI;
 using SEF.Repository;
 
-public class UIForm<T> where T: class, IModel, new() {
+public class UIForm<T> where T: class, new() {
     IRepository repo;
     public string TableName {get; private set;}
 
@@ -10,7 +10,7 @@ public class UIForm<T> where T: class, IModel, new() {
         this.TableName = typeof(T).Name;
     }
 
-    public virtual void Add(IModel obj) {
+    public virtual void Add(T obj) {
         repo.Add(obj);
     }
 
@@ -19,7 +19,7 @@ public class UIForm<T> where T: class, IModel, new() {
     }
 
     public virtual void Update(T oldObj, T newObj) {
-        repo.UpdateRow<T>(oldObj, newObj);
+        repo.UpdateRow(oldObj, newObj);
     }
 
     public virtual void Delete(T obj) {

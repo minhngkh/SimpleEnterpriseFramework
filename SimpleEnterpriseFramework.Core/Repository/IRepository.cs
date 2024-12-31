@@ -13,10 +13,10 @@ public interface IRepository {
 
     // UpdateRow("User", "")
     public abstract void UpdateRow(string table, string condition, string updateStatement);
-    public abstract void UpdateRow<T>(T? conditions, T updates) where T: class, IModel;
+    public abstract void UpdateRow(object? conditions, object updates);
 
     public abstract void Add(string table, object values);
-    public abstract void Add(IModel obj);
+    public abstract void Add(object obj);
 
     public abstract List<object[]> Find(string table, object? conditions = null);
     public abstract List<T> Find<T>(object? conditions = null) where T: class, new();

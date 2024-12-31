@@ -63,7 +63,7 @@ public class WebUI: IUI {
         return builder.ToString();
     }
 
-    public void Register<Model, Form>(Form form) where Model: class, IModel, new()
+    public void Register<Model, Form>(Form form) where Model: class, new()
                                                  where Form: UIForm<Model> {
         string tableName = form.TableName;
         List<string> columnNames = form.GetColumnNames();
@@ -79,16 +79,11 @@ public class WebUI: IUI {
         });
 
         app.MapPost($"/table/{tableName}", async (HttpContext context) => {
-            var formData = await context.Request.ReadFormAsync();
-            Dictionary<string, object> values = new();
-            foreach (string key in formData.Keys) {
-                string val = formData[key]!.ToString().Trim();
-                if (columnNames.Contains(key) && val != "") {
-                    Console.WriteLine($"{key}: {formData[key]!.ToString()}");
-                    values[key] = val;
-                }
-            }
-            form.Add(values);
+            string jsonString = await readAllStream(context.Request.BodyReader);
+            JsonSerializer serializer = new JsonSerializer();
+            Model? data = JsonConvert.DeserializeObject<Model>(jsonString);
+            if (data == null) return Results.BadRequest();
+            form.Add(data);
             return Results.Ok();
         });
 
@@ -100,6 +95,16 @@ public class WebUI: IUI {
             Console.WriteLine(data.oldData);
             Console.WriteLine(data.newData);
             form.Update(data.oldData, data.newData);
+            return Results.Ok();
+        });
+
+        app.MapDelete($"/table/{tableName}", async (HttpContext context) => {
+            string jsonString = await readAllStream(context.Request.BodyReader);
+            JsonSerializer serializer = new JsonSerializer();
+            Model? data = JsonConvert.DeserializeObject<Model>(jsonString);
+            Console.WriteLine(data);
+            if (data == null) return Results.BadRequest();
+            form.Delete(data);
             return Results.Ok();
         });
     }

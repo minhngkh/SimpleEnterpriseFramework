@@ -7,9 +7,9 @@ using System.Reflection;
 using System.Diagnostics;
 
 static class Utils {
-    public static (string, object)[] GetPairs(object conditions)
+    public static (string, object)[] GetPairs(object obj)
     {
-        if (conditions is IDictionary<string, object> dictionary)
+        if (obj is IDictionary<string, object> dictionary)
         {
             return dictionary.Where(pair => pair.Value != null)
                             .Select(pair => (pair.Key, pair.Value))
@@ -17,9 +17,12 @@ static class Utils {
         }
         else
         {
-            Type type = conditions.GetType();
-            return type.GetProperties()
-                .Select(p => (p.Name, p.GetValue(conditions) ?? DBNull.Value)) // Handle null by using DBNull.Value
+            Type type = obj.GetType();
+            return type.GetFields(BindingFlags.Instance |
+                                      BindingFlags.Public |
+                                      BindingFlags.DeclaredOnly)
+                .Where(x => x.GetValue(obj) != null)
+                .Select(x => (x.Name, x.GetValue(obj)!))
                 .ToArray();
         }
     }
@@ -169,12 +172,12 @@ public class SqliteRepository: IRepository {
         }
     }
 
-    public void UpdateRow<T>(T? conditions, T updates) where T: class, IModel {
+    public void UpdateRow(object? conditions, object updates) {
         StringBuilder commandBuilder = new();
         using (SqliteCommand command = connection.CreateCommand()) {
-            commandBuilder.Append($"UPDATE {updates.TableName}");
+            commandBuilder.Append($"UPDATE {updates.GetType().Name}");
 
-            (string, object)[] updatePairs = updates.GetPairs().Where(x => x.Item2 != null).ToArray()!;
+            (string, object)[] updatePairs = Utils.GetPairs(updates);
             Debug.Assert(updatePairs.Length > 0);
 
             commandBuilder.Append(" SET ")
@@ -184,7 +187,7 @@ public class SqliteRepository: IRepository {
             }
 
             if (conditions != null) {
-                (string, object)[] conditionPairs = conditions.GetPairs().Where(x => x.Item2 != null).ToArray()!;
+                (string, object)[] conditionPairs = Utils.GetPairs(conditions);// conditions.GetPairs().Where(x => x.Item2 != null).ToArray()!;
                 if (conditionPairs.Length > 0) {
                     commandBuilder.Append(" WHERE ")
                                   .AppendJoin(" AND ", conditionPairs.Select((item, index) => $"{item.Item1} = @cond{index}"));
@@ -232,9 +235,9 @@ public class SqliteRepository: IRepository {
         }
     }
 
-    public void Add(IModel obj) {
+    public void Add(object obj) {
         if (obj == null) return;
-        (string, object?)[] valuePairs = obj.GetPairs();
+        (string, object)[] valuePairs = Utils.GetPairs(obj);// obj.GetPairs().Where(x => x.Item2 != null).ToArray()!;
         if (valuePairs.Length == 0) return;
 
         StringBuilder fieldBuilder = new();
@@ -242,7 +245,6 @@ public class SqliteRepository: IRepository {
         using (SqliteCommand command = connection.CreateCommand()) {
             for (int i = 0; i < valuePairs.Length; i++) {
                 var (field, val) = valuePairs[i];
-                if (val == null) continue;
                 if (i > 0) fieldBuilder.Append(", ");
                 fieldBuilder.Append(field);
 
@@ -251,7 +253,7 @@ public class SqliteRepository: IRepository {
                 command.Parameters.AddWithValue($"@val{i}", val ?? DBNull.Value);
             }
 
-            command.CommandText = $"INSERT INTO {obj.TableName}({fieldBuilder.ToString()}) VALUES({valueBuilder.ToString()});";
+            command.CommandText = $"INSERT INTO {obj.GetType().Name}({fieldBuilder.ToString()}) VALUES({valueBuilder.ToString()});";
             Console.WriteLine(command.CommandText);
             command.ExecuteNonQuery();
         }
@@ -262,14 +264,16 @@ public class SqliteRepository: IRepository {
                                                   BindingFlags.Public);
         T obj = new();
         foreach (FieldInfo field in fields) {
-            DbFieldAttribute? dbAttr = (DbFieldAttribute?)Attribute.GetCustomAttribute(field, typeof (DbFieldAttribute));
-            if (dbAttr != null) {
+            try {
                 object val = reader.GetValue(reader.GetOrdinal(field.Name));
                 if (val != System.DBNull.Value) {
                     // val = Convert.ChangeType(val, field.FieldType);
                     Debug.WriteLine($"{field.Name} = {val.ToString()}");
                     field.SetValue(obj, val);
                 }
+            } catch (System.IndexOutOfRangeException ex) {
+                Console.WriteLine(ex);
+                continue;
             }
         }
         return obj;
