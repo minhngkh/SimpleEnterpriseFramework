@@ -2,6 +2,7 @@ using HandlebarsDotNet;
 using System.IO;
 using System.Web;
 using System.Text;
+using System.Text.Json;
 using System.Diagnostics;
 using System.Text.Json.Serialization;
 using Microsoft.Extensions.Primitives;
@@ -103,10 +104,16 @@ public class Program
 
         WebApplication app = builder.Build();
 
+        //Table template
         string tableTemplatePath = Path.Combine(Directory.GetCurrentDirectory(), "templates", "table.hbs");
         string tableTemplate = File.ReadAllText(tableTemplatePath);
         var tablePart = Handlebars.Compile(tableTemplate);
         Handlebars.RegisterTemplate("table", tableTemplate);
+
+        //Login template
+        string loginTemplatePath = Path.Combine(Directory.GetCurrentDirectory(), "templates", "login.hbs");
+        string loginTemplate = File.ReadAllText(loginTemplatePath);
+        var loginPage = Handlebars.Compile(loginTemplate);
 
         // Register 'neq' helper
         Handlebars.RegisterHelper("neq", (writer, context, parameters) =>
@@ -128,12 +135,74 @@ public class Program
         app.MapGet("/", (HttpContext context) =>
         {
             context.Response.ContentType = "text/html";
-            return indexPage(new
-            {
-                tableNames = repo.ListTables(),
-            });
+            string renderedLogin = loginPage(null); 
+            return Results.Text(renderedLogin, "text/html");
         });
 
+        //Handle login POST request
+        app.MapPost("/login", async (HttpContext context) =>
+        {
+            Console.WriteLine("Login!");
+            var formData = await context.Request.ReadFormAsync();
+            string Email = formData["email"];
+            string Password = formData["password"];
+
+            try
+            {
+                // Using FindOne to find the user
+                var conditions = new { email = Email, password = Password };
+                object[]? user = repo.FindOne("User", conditions);
+
+                if (user != null && user.Length > 0)
+                {
+                    // User found, handle login
+                    context.Response.Cookies.Append("auth", "valid", new CookieOptions { HttpOnly = true });
+                    return Results.Ok();
+                }
+                else
+                {
+                    // User not found or invalid credentials
+                    return Results.Unauthorized();
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex);
+                return Results.Problem($"Error during login: {ex.Message}");
+            }
+        });
+
+        //Handle Logout Post request
+        app.MapPost("/logout", (HttpContext context) =>
+        {
+            context.Response.Cookies.Append("auth", "unvalid", new CookieOptions
+            {
+                Expires = DateTimeOffset.UtcNow.AddDays(-1),  
+                HttpOnly = true, 
+                Path = "/" 
+            });
+
+            // Optionally, clear other token like JWT
+            context.Response.Cookies.Delete("user-token");
+
+            return Results.Ok(new { message = "Successfully logged out" }); 
+        });
+
+
+        // Serve the main application page
+        app.MapGet("/app", (HttpContext context) =>
+        {
+            if (context.Request.Cookies["auth"] != "valid")
+            {
+                context.Response.Redirect("/");
+                return Results.Text("Redirecting to login...");
+            }
+
+            context.Response.ContentType = "text/html";
+            return Results.Text(indexPage(new { tableNames = repo.ListTables() }), "text/html");
+        });
+
+        //Handle Table CRUD
         app.MapGet("/table", (HttpContext context) =>
         {
             StringValues tableName = context.Request.Query["tableName"];

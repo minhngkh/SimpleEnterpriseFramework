@@ -72,6 +72,21 @@ body {
     flex-grow: 1;
     margin-left: 10px;
 }
+
+button {
+    background-color: #444;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    cursor: pointer;
+    font-size: 1em;
+    border-radius: 5px;
+    margin-top: 10px;
+}
+
+button:hover {
+    background-color: #555;
+}
     </style>
 </head>
 <body>
@@ -84,13 +99,16 @@ body {
                     onClick="(() => load_table('{{this}}'))();return false;" >{{this}}</li>
             {{/each}}
             </ul>
+            <button onclick="Logout()">Log out</button>
         </div>
         <div id="table-data" class="table-data">
         </div>
     </div>
-</body>
-<script>
+
+    <script>
     let currentTable = null;
+
+    // Function to load the table data
     function load_table(tableName) {
         fetch(`http://localhost:5126/table?tableName=${tableName}`).then(async response => {
             const responseText = await response.text();
@@ -100,7 +118,6 @@ body {
                 }
                 currentTable = document.getElementById(`tableName-${tableName}`);
                 currentTable.classList.add("current");
-                // console.log(document.getElementById("table-data"));
                 const table = document.getElementById("table-data")
                 table.innerHTML = '';
                 table.insertAdjacentHTML("beforeend", responseText);
@@ -125,5 +142,24 @@ body {
             alert(err);
         });
     }
-</script>
+
+    // Function to handle logout
+    function Logout() {
+        fetch("/logout", { 
+            method: "POST" 
+        }).then(response => {
+            if (response.ok) {
+                window.location.href = "/"; 
+            } else {
+                alert("Failed to log out");
+            }
+        }).catch(err => {
+            alert("Error: " + err);
+        });
+
+        // Redirect the user to the login page
+        window.location.href = "/"; // Or the appropriate login route
+    }
+    </script>
+</body>
 </html>
