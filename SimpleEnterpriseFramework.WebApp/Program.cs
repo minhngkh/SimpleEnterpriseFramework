@@ -4,8 +4,11 @@ using System.Web;
 using System.Text;
 using System.Diagnostics;
 using System.Text.Json.Serialization;
+using Microsoft.AspNetCore.Identity.Data;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Primitives;
 using Microsoft.Data.Sqlite;
+using SimpleEnterpriseFramework.WebApp;
 
 
 #nullable enable
@@ -54,6 +57,12 @@ struct User
     }
 }
 
+public class LoginRequest
+{
+    public string Username { get; set; } // Ensure this is defined and spelled correctly
+    public string Password { get; set; }
+}
+
 [JsonSerializable(typeof(string))]
 [JsonSerializable(typeof(Microsoft.AspNetCore.Mvc.ProblemDetails))]
 internal partial class AppJsonSerializerContext : JsonSerializerContext
@@ -67,23 +76,28 @@ public class Program
         IRepository repo = new SqliteRepository("Data Source=test.db");
         List<string> tableNames = repo.ListTables();
 
-        repo.CreateTable<User>(true);
-        repo.CreateTable<Product>(true);
+        // repo.CreateTable<User>(true);
+        // repo.CreateTable<Product>(true);
+        //
+        // for (int i = 0; i < 16; i++)
+        // {
+        //     repo.Add<Product>(new Product(
+        //         name: $"product{i}",
+        //         price: i * 1000.0f
+        //     ));
+        //     repo.Add<User>(new User(
+        //         username: $"user{i}",
+        //         email: $"example{i}@gmail.com",
+        //         phone: i % 2 == 0 ? null : new string($"{i}"[0], 10),
+        //         password: $"password{i}"
+        //     ));
+        // }i
 
-        for (int i = 0; i < 16; i++)
-        {
-            repo.Add<Product>(new Product(
-                name: $"product{i}",
-                price: i * 1000.0f
-            ));
-            repo.Add<User>(new User(
-                username: $"user{i}",
-                email: $"example{i}@gmail.com",
-                phone: i % 2 == 0 ? null : new string($"{i}"[0], 10),
-                password: $"password{i}"
-            ));
-        }
-
+        var secretKey = "MySuperSecretKey12345"; // Use a secure key in production
+        var issuer = "http://localhost:5126";
+        var audience = "http://localhost:5126";
+        var membership = new Membership(secretKey, issuer, audience);
+        
         object getTableParameters(string tableName)
         {
             return new
@@ -95,6 +109,7 @@ public class Program
         }
 
         var builder = WebApplication.CreateSlimBuilder(args);
+        builder.Services.AddEndpointsApiExplorer();
         builder.Services.ConfigureHttpJsonOptions(options =>
         {
             options.SerializerOptions.TypeInfoResolverChain.Insert(0,
@@ -102,7 +117,39 @@ public class Program
         });
 
         WebApplication app = builder.Build();
+        app.MapPost("/register", (string username, string password) =>
+        {
+            var success = membership.Register(username, password);
+            if (!success)
+            {
+                return Results.BadRequest("Username already exists.");
+            }
+            return Results.Ok("User registered successfully.");
+        });
 
+// Login endpoint
+        app.MapPost("/login", async (HttpContext context) =>
+        {
+            var loginRequest = await context.Request.ReadFromJsonAsync<LoginRequest>();
+            if (loginRequest == null)
+            {
+                return Results.BadRequest("Invalid request payload.");
+            }
+            var token = membership.Login(loginRequest.Username, loginRequest.Password);
+            if (token == "")
+            {
+                return Results.Unauthorized();
+            }
+            return Results.Ok(new { Token = token });
+        });
+
+
+// Logout endpoint
+        app.MapPost("/logout", (string token) =>
+        {
+            membership.Logout(token);
+            return Results.Ok("Logged out successfully.");
+        });
         string tableTemplatePath = Path.Combine(Directory.GetCurrentDirectory(), "templates", "table.hbs");
         string tableTemplate = File.ReadAllText(tableTemplatePath);
         var tablePart = Handlebars.Compile(tableTemplate);

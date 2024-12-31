@@ -60,14 +60,14 @@ public class MembershipRepository
 
     }
 
-    public void AddUser(String userName, String password, String roleName)
+    public bool AddUser(String userName, String password, String roleName)
     {
         List<Role> roles =  _repository.Find<Role>(new {Name = roleName});
         Console.WriteLine(roleName);
         if (roles.Count == 0)
         {
             Console.WriteLine("Role name does not exist.");
-            return;
+            return false;
         }
         try
         {
@@ -83,6 +83,8 @@ public class MembershipRepository
         {
             Console.WriteLine($"An error occurred while creating the user table: {ex.Message}");
         }
+
+        return true;
     }
 
     public void AddRole(String roleName)

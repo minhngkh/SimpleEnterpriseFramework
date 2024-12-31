@@ -20,6 +20,7 @@
 
     <ItemGroup>
       <ProjectReference Include="..\SimpleEnterpriseFramework.DataAccess\SimpleEnterpriseFramework.DataAccess.csproj" />
+      <ProjectReference Include="..\SimpleEnterpriseFramework.Membership\SimpleEnterpriseFramework.Membership.csproj" />
     </ItemGroup>
 
 
