@@ -21,8 +21,7 @@ static class Utils {
             return type.GetFields(BindingFlags.Instance |
                                       BindingFlags.Public |
                                       BindingFlags.DeclaredOnly)
-                .Where(x => x.GetValue(obj) != null)
-                .Select(x => (x.Name, x.GetValue(obj)!))
+                .Select(x => (x.Name, x.GetValue(obj) ?? DBNull.Value))
                 .ToArray();
         }
     }
@@ -78,10 +77,17 @@ public class SqliteRepository: IRepository {
     public List<ColumnInfo> ListColumns(string table) {
         List<ColumnInfo> result = new();
         using (SqliteCommand command = connection.CreateCommand()) {
-            command.CommandText = $"PRAGMA table_info(\"{table}\")";
+            command.CommandText = $"PRAGMA table_info('{table}')";
             using (SqliteDataReader reader = command.ExecuteReader()) {
                 while (reader.Read()) {
-                    result.Add(new ColumnInfo(reader.GetInt64(0), reader.GetString(1), reader.GetString(2)));
+                    ColumnInfo info = new ColumnInfo(
+                        id: reader.GetInt64(0),
+                        name: reader.GetString(1),
+                        type: reader.GetString(2),
+                        nullable: reader.GetInt32(3) == 0,
+                        isPrimaryKey: reader.GetInt32(5) > 0
+                    );
+                    result.Add(info);
                 }
             }
         }
@@ -156,8 +162,12 @@ public class SqliteRepository: IRepository {
                 var (field, val) = conditionPairs[i];
 
                 if (i > 0) commandBuilder.Append(" AND ");
-                commandBuilder.Append($"{field} = @val{i}");
-                command.Parameters.AddWithValue($"@val{i}", val);
+                if (val != DBNull.Value) {
+                    commandBuilder.Append($"{field} = @val{i}");
+                    command.Parameters.AddWithValue($"@val{i}", val);
+                } else {
+                    commandBuilder.Append($"{field} IS NULL ");
+                }
             }
             Debug.WriteLine(commandBuilder.ToString());
             command.CommandText = commandBuilder.ToString();
@@ -190,7 +200,9 @@ public class SqliteRepository: IRepository {
                 (string, object)[] conditionPairs = Utils.GetPairs(conditions);// conditions.GetPairs().Where(x => x.Item2 != null).ToArray()!;
                 if (conditionPairs.Length > 0) {
                     commandBuilder.Append(" WHERE ")
-                                  .AppendJoin(" AND ", conditionPairs.Select((item, index) => $"{item.Item1} = @cond{index}"));
+                                  .AppendJoin(" AND ",
+                                          conditionPairs.Select((item, index) =>
+                                              item.Item2 == DBNull.Value ? $"{item.Item1} IS NULL" : $"{item.Item1} = @cond{index}"));
                     for (int i = 0; i < conditionPairs.Length; i++) {
                         command.Parameters.AddWithValue($"@cond{i}", conditionPairs[i].Item2);
                     }
@@ -288,7 +300,9 @@ public class SqliteRepository: IRepository {
                 (string, object)[] conditionPairs = Utils.GetPairs(conditions);
                 if (conditionPairs.Length > 0) {
                     commandBuilder.Append(" WHERE ")
-                                  .AppendJoin(" AND ", conditionPairs.Select((item, index) => $"{item.Item1} = @cond{index}"));
+                                  .AppendJoin(" AND ",
+                                          conditionPairs.Select((item, index) =>
+                                              item.Item2 == DBNull.Value ? $"{item.Item1} IS NULL" : $"{item.Item1} = @cond{index}"));
                     for (int i = 0; i < conditionPairs.Length; i++) {
                         command.Parameters.AddWithValue($"@cond{i}", conditionPairs[i].Item2);
                     }
@@ -319,8 +333,12 @@ public class SqliteRepository: IRepository {
                 for (int i = 0; i < conditionPairs.Length; i++) {
                     var (field, val) = conditionPairs[i];
                     if (i > 0) commandBuilder.Append("AND ");
-                    commandBuilder.Append($"{field} = @val{i} ");
-                    command.Parameters.AddWithValue($"@val{i}", val);
+                    if (val != DBNull.Value) {
+                        commandBuilder.Append($"{field} = @val{i} ");
+                        command.Parameters.AddWithValue($"@val{i}", val);
+                    } else {
+                        commandBuilder.Append($"{field} IS NULL ");
+                    }
                 }
             }
             command.CommandText = commandBuilder.ToString();
@@ -343,7 +361,9 @@ public class SqliteRepository: IRepository {
             (string, object)[] conditionPairs = Utils.GetPairs(conditions);
             if (conditionPairs.Length > 0) {
                 commandBuilder.Append(" WHERE ")
-                              .AppendJoin(" AND ", conditionPairs.Select((item, index) => $"{item.Item1} = @cond{index}"));
+                              .AppendJoin(" AND ",
+                                      conditionPairs.Select((item, index) =>
+                                          item.Item2 == DBNull.Value ? $"{item.Item1} IS NULL" : $"{item.Item1} = @cond{index}"));
                 for (int i = 0; i < conditionPairs.Length; i++) {
                     command.Parameters.AddWithValue($"@cond{i}", conditionPairs[i].Item2);
                 }
@@ -373,7 +393,9 @@ public class SqliteRepository: IRepository {
             (string, object)[] conditionPairs = Utils.GetPairs(conditions);
             if (conditionPairs.Length > 0) {
                 commandBuilder.Append(" WHERE ")
-                    .AppendJoin(" AND ", conditionPairs.Select((item, index) => $"{item.Item1} = @cond{index}"));
+                              .AppendJoin(" AND ",
+                                      conditionPairs.Select((item, index) =>
+                                          item.Item2 == DBNull.Value ? $"{item.Item1} IS NULL" : $"{item.Item1} = @cond{index}"));
                 for (int i = 0; i < conditionPairs.Length; i++) {
                     command.Parameters.AddWithValue($"@cond{i}", conditionPairs[i].Item2);
                 }

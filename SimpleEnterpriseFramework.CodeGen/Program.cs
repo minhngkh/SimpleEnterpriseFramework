@@ -7,7 +7,7 @@ using SEF.Repository;
 public class {{modelName}} {
 #pragma warning disable 0414
     {{#each columnsInfo}}
-    public {{convertType this.type}} {{this.name}} = {{defaultValue this.type}};
+    public {{convertType this.type}}{{#if this.nullable}}?{{/if}} {{this.name}} = {{defaultValue this}};
     {{/each}}
 #pragma warning restore 0414
 }
@@ -33,17 +33,22 @@ Handlebars.RegisterHelper("convertType", (writer, context, parameters) => {
     }
 });
 Handlebars.RegisterHelper("defaultValue", (writer, context, parameters) => {
-    if (parameters.Length == 1) {
-        string cSharpType = (parameters[0].ToString()!.ToLower()) switch {
-            "text" => "\"\"",
-            "real" => "0",
-            "integer" => "0",
-            "int" => "0",
-            _ => throw new Exception("Unreachable")
-        };
-        writer.WriteSafeString(cSharpType);
+    if (parameters.Length == 1 && parameters[0] is ColumnInfo colInfo) {
+        string defaultValue;
+        if (colInfo.nullable) {
+            defaultValue = "null";
+        } else {
+            defaultValue = (colInfo.type.ToString()!.ToLower()) switch {
+                "text" => "\"\"",
+                "real" => "0",
+                "integer" => "0",
+                "int" => "0",
+                _ => throw new Exception("Unreachable")
+            };
+        }
+        writer.WriteSafeString(defaultValue);
     } else {
-        throw new Exception("Required 1 argument");
+        throw new Exception("Required 1 column info");
     }
 });
 
@@ -68,9 +73,10 @@ foreach (string tableName in repo.ListTables()) {
     string model = modelTemplate(new {
         modelName = tableName,
         columnsInfo = columnsInfo
-    }, new {}); // no idea what's data supposed to be, anything seem to work so i just put 0
+    });
     string path = Path.Combine(Directory.GetCurrentDirectory(), directory, $"{tableName}.cs");
     Console.WriteLine(path);
+    // Console.WriteLine(model);
     File.WriteAllText(path, model);
 }
 return 0;

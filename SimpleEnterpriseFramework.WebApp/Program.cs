@@ -12,8 +12,8 @@ using Microsoft.Data.Sqlite;
 
 struct Product
 {
-    // [DbField("INTEGER", Unique = true, IsKey = true)]
-    // public int? Id = null; // Field, not a property
+    [DbField("INTEGER", Unique = true, IsKey = true)]
+    public int? Id = null; // Field, not a property
 
     [DbField("TEXT", Nullable = false)]
     public string name; // Field, not a property
@@ -30,8 +30,8 @@ struct Product
 
 struct User
 {
-    // [DbField("INTEGER", Unique = true, IsKey = true)]
-    // public int? Id = null; // Field, not a property
+    [DbField("INTEGER", Unique = true, IsKey = true)]
+    public int? Id = null; // Field, not a property
 
     [DbField("TEXT", Unique = true, Nullable = false)]
     public string username; // Field, not a property

@@ -28,6 +28,13 @@ public class WebUI: IUI {
     }
 
     public void Init() {
+        Handlebars.RegisterHelper("ifIsNull", (writer, options, context, arguments) => {
+            if (arguments.Length == 1 && arguments[0] == null) {
+                options.Template(writer, context);
+            } else {
+                options.Inverse(writer, context);
+            }
+        });
         Handlebars.RegisterHelper("neq", (writer, context, parameters) => {
             if (parameters.Length > 0 && parameters[0].ToString() != "Id") {
                 writer.WriteSafeString(context);
@@ -71,13 +78,13 @@ public class WebUI: IUI {
     public void Register<Model, Form>(Form form) where Model: class, new()
                                                  where Form: UIForm<Model> {
         string tableName = form.TableName;
-        List<string> columnNames = form.GetColumnNames();
+        List<ColumnInfo> columnsInfo = form.GetColumnsInfo();
         tableNames.Add(form.TableName);
         Console.WriteLine($"/table/{tableName}");
         app.MapGet($"/table/{tableName}", (HttpContext context) => {
             var parameters = new {
                 tableName = tableName,
-                columns = columnNames,
+                columns = columnsInfo,
                 data = form.GetAllData(),
             };
             return Results.Content(tableTemplate(parameters), "text/html");

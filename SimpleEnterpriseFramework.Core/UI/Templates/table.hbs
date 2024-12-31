@@ -1,7 +1,8 @@
 <div>
     <div style="display: flex; align-items: center; margin-bottom: 1em;">
         <!-- Add New and Check Buttons -->
-        <button class="Add-button" id="openModalButton">Add new {{tableName}}</button>
+        <button onclick='(() => window.openCreateForm({ {{#each columns}} {{#if this.nullable}} "{{this.name}}": null, {{else}} {{#if this.isPrimaryKey}} "{{this.name}}": null, {{else}} "{{this.name}}": "", {{/if}} {{/if}} {{/each}} }))(); return false;'
+                class="Add-button" id="openModalButton">Add new {{tableName}}</button>
 
         <input 
             type="text" 
@@ -22,18 +23,22 @@
         <thead>
             <tr>
                 {{#each columns}}
-                    <th>{{this}}</th>
+                    <th>{{this.name}}</th>
                 {{/each}}
             </tr>
         </thead>
         <tbody id="table-body">
             {{#each data}}
-                <tr data-id="{{Id}}" ondblclick="(() => window.openUpdateForm(this))(); return false;">
+                <tr data-id="{{Id}}" ondblclick='(() => window.openUpdateForm({ {{#each this}} {{#ifIsNull this}} "{{@key}}": null, {{else}} "{{@key}}": "{{this}}", {{/ifIsNull}} {{/each}} }))(); return false;'>
                     {{#each this}}
-                        <td id="{{@key}}">{{this}}</td>
+                        {{#ifIsNull this}}
+                            <td id="{{@key}}" class="disabled">{{this}}</td>
+                        {{else}}
+                            <td id="{{@key}}">{{this}}</td>
+                        {{/ifIsNull}}
                     {{/each}}
                     <td class="no-border">
-                        <button class="delete-button" onclick="(() => window.deleteRow(this?.parentElement?.parentElement))(); return false;">Delete</button>
+                        <button class="delete-button" onclick='(() => window.deleteRow({ {{#each this}} {{#ifIsNull this}} "{{@key}}": null, {{else}} "{{@key}}": "{{this}}", {{/ifIsNull}} {{/each}} }))(); return false;'>Delete</button>
                     </td>
                 </tr>
             {{/each}}

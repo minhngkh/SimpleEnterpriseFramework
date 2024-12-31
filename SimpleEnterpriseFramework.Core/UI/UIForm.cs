@@ -26,8 +26,8 @@ public class UIForm<T> where T: class, new() {
         repo.DeleteRow(TableName, obj);
     }
 
-    public virtual List<string> GetColumnNames() {
-        return repo.ListColumns(TableName).Select(x => x.name).ToList();
+    public virtual List<ColumnInfo> GetColumnsInfo() {
+        return repo.ListColumns(TableName);
     }
 
     public virtual List<T> GetAllData() {
