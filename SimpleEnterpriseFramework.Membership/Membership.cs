@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
@@ -7,41 +8,103 @@ using SimpleEnterpriseFramework.Abstractions.Data;
 
 namespace SimpleEnterpriseFramework.Membership;
 
-public class Membership(IDatabaseDriver db, MembershipRepository repo, MembershipOptions options) : IMembership
+public class Membership : IMembership
 {
-    // private readonly string _issuer;
-    // private readonly string _audience;
-    private PasswordHasher _passwordHasher = new();
+    private readonly IDatabaseDriver _db;
+    private readonly MembershipRepository _repo;
+    private readonly MembershipOptions _options;
+    private readonly PasswordHasher _passwordHasher;
     private readonly HashSet<string> _tokenBlacklist = [];
 
-
-    public bool IsTokenBlacklisted(string token)
+    public Membership(
+        IDatabaseDriver db, MembershipRepository repo, MembershipOptions options
+    )
     {
-        return _tokenBlacklist.Contains(token);
+        _db = db;
+        _repo = repo;
+        _options = options;
+        _passwordHasher = new PasswordHasher();
     }
 
-    public String Login(String username, String password)
+    public void Setup()
     {
-        List<User> users = db.Find<User>(new { Username = username });
-        if (this._passwordHasher.VerifyPassword(password, users[0].Password))
+        _repo.CreateRoleTable();
+        _repo.CreateUserTable();
+        _repo.AddRole("member");
+        _repo.AddRole("admin");
+    }
+
+    // TODO: store the token in db instead of the memory
+    public string ChangePassword(string username, string newPassword, string token)
+    {
+        throw new NotImplementedException();
+    }
+
+    public bool IsLoggedIn(string token)
+    {
+        return !_tokenBlacklist.Contains(token);
+    }
+
+    public bool Login(string username, string password,
+        [MaybeNullWhen(false)] out string token)
+    {
+        try
         {
-            return ""; // Unauthorized
-        }
+            var user = _repo.GetUserByUsername(username);
 
-        var role = users[0].RoleId;
-        List<Role> roles = db.Find<Role>(new { Id = role });
-        return GenerateToken(username, roles[0].Name);
+            // user not found or password is incorrect
+            if (user == null)
+            {
+                Console.WriteLine("User not found.");
+                token = default;
+                return false;
+            }
+            
+            if (!BCrypt.Net.BCrypt.EnhancedVerify(password, user.Password))
+            {
+                Console.WriteLine("Password is incorrect.");
+                token = default;
+                return false;
+            }
+
+            token = GenerateToken(username, user.RoleId);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Login error: {ex.Message}");
+            token = default;
+            return false;
+        }
     }
 
-    public bool Register(string username, string password, string role = "User")
+    public bool Register(string username, string password, string? role = default)
     {
         // Check if the username already exists
-        if (!repo.AddUser(username, password, role))
+        // if (!_repo.AddUser(username, password, role))
+        // {
+        //     return false;
+        // }
+
+        // var user = _repo.GetUserByUsername(username);
+
+        try
         {
+            var hashedPassword = BCrypt.Net.BCrypt.EnhancedHashPassword(password);
+            _repo.AddUser(username, hashedPassword, role);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Register error: {ex.Message}");
             return false;
         }
 
         return true;
+    }
+
+    public string RecoverPassword(string username)
+    {
+        throw new NotImplementedException();
     }
 
     public void Logout(string token)
@@ -50,16 +113,17 @@ public class Membership(IDatabaseDriver db, MembershipRepository repo, Membershi
         _tokenBlacklist.Add(token);
     }
 
-    private string GenerateToken(string username, string role)
+    private string GenerateToken(string username, long? roleId)
     {
-        var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(options.SecretKey));
+        var securityKey =
+            new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_options.SecretKey));
         var credentials =
             new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
 
         var claims = new[]
         {
-            new Claim(ClaimTypes.Name, username),
-            new Claim(ClaimTypes.Role, role),
+            new Claim("user_username", username),
+            new Claim("user_roleId", roleId.ToString() ?? ""),
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
         };
 

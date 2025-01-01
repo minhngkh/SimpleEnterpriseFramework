@@ -1,30 +1,7 @@
 using SimpleEnterpriseFramework.Abstractions.Data;
-using SimpleEnterpriseFramework.Data.Sqlite;
+using SimpleEnterpriseFramework.Membership.Models;
 
 namespace SimpleEnterpriseFramework.Membership;
-
-class Role
-{
-    [SqliteField("INTEGER", Unique = true, IsKey = true)]
-    public int Id;
-
-    [SqliteField("TEXT", Unique = true, Nullable = false)]
-    public string Name;
-}
-
-class User
-{
-    [SqliteField("INTEGER", Unique = true, IsKey = true)]
-    public int Id;
-
-    [SqliteField("TEXT", Unique = true, Nullable = false)]
-    public string Username;
-
-    [SqliteField("TEXT", Nullable = false)] public string Password;
-
-    [SqliteField("INTEGER", "Role", "Id", Nullable = false)]
-    public int RoleId;
-}
 
 public class MembershipRepository(IDatabaseDriver db)
 {
@@ -63,38 +40,40 @@ public class MembershipRepository(IDatabaseDriver db)
     {
     }
 
-    public bool AddUser(String userName, String password, String roleName)
+    public void AddUser(string userName, string password, string? roleName = default)
     {
-        List<Role> roles = db.Find<Role>(new { Name = roleName });
-        Console.WriteLine(roleName);
-        if (roles.Count == 0)
+        if (roleName != null)
         {
-            Console.WriteLine("Role name does not exist.");
-            return false;
+            var role = db.First(new Role { Name = roleName }, ["Name"]);
+            if (role == null) throw new Exception("Role not found.");
+            db.Add(
+                new User
+                {
+                    Username = userName,
+                    Password = password,
+                    RoleId = role.Id
+                },
+                ["Username", "Password", "RoleId"]
+            );
+        }
+        else
+        {
+            db.Add(
+                new User
+                {
+                    Username = userName,
+                    Password = password
+                },
+                ["Username", "Password"]
+            );
         }
 
-        try
-        {
-            db.Add(new User()
-            {
-                Username = userName,
-                Password = _hasher.HashPassword(password),
-                RoleId = roles[0].Id,
-            });
-            Console.WriteLine("User added successfully.");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine(
-                $"An error occurred while creating the user table: {ex.Message}");
-        }
-
-        return true;
+        Console.WriteLine("User added successfully.");
     }
 
-    public void AddRole(String roleName)
+    public void AddRole(string roleName)
     {
-        List<Role> roles = db.Find<Role>(new { Name = roleName });
+        var roles = db.Find<Role>(new { Name = roleName });
         if (roles.Count != 0)
         {
             Console.WriteLine("Role name exists.");
@@ -102,10 +81,13 @@ public class MembershipRepository(IDatabaseDriver db)
 
         try
         {
-            db.Add(new Role()
-            {
-                Name = roleName,
-            });
+            db.Add(
+                new Role
+                {
+                    Name = roleName
+                },
+                ["Name"]
+            );
             Console.WriteLine("Role added successfully.");
         }
         catch (Exception ex)
@@ -182,5 +164,15 @@ public class MembershipRepository(IDatabaseDriver db)
         {
             Console.WriteLine($"Could not modify user.: {ex.Message}");
         }
+    }
+
+    public User? GetUserByUsername(string username)
+    {
+        var user = db.First(
+            new User { Username = username },
+            ["Username"]
+        );
+
+        return user;
     }
 }

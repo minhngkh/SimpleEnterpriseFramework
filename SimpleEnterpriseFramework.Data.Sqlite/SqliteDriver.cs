@@ -6,6 +6,7 @@ using SimpleEnterpriseFramework.Abstractions.Data;
 
 namespace SimpleEnterpriseFramework.Data.Sqlite;
 
+// TODO: Add ability to have custom field name in table model
 public class SqliteDriver : IDatabaseDriver
 {
     private readonly SqliteDriverOptions _options;
@@ -17,6 +18,231 @@ public class SqliteDriver : IDatabaseDriver
         _options = options;
         _connection = new SqliteConnection(_options.ConnectionString);
         _connection.Open();
+    }
+
+    public void Add<T>(T obj, List<string>? selectedFields = null) where T : Model, new()
+    {
+        // ArgumentNullException.ThrowIfNull(obj);
+
+        var table = obj.TableName;
+
+        StringBuilder fieldBuilder = new();
+        StringBuilder valueBuilder = new();
+        var valuePairs = Utils.GetPairs(obj);
+
+        Console.WriteLine(valuePairs.Length);
+
+        using var command = _connection.CreateCommand();
+
+        var i = 0;
+        foreach (var (field, val) in valuePairs)
+        {
+            if (selectedFields is not null)
+            {
+                if (!selectedFields.Contains(field)) continue;
+            }
+
+            if (i > 0) fieldBuilder.Append(", ");
+            fieldBuilder.Append(field);
+
+            if (i > 0) valueBuilder.Append(", ");
+            valueBuilder.Append($"@val{i}");
+            command.Parameters.AddWithValue($"@val{i}", val ?? DBNull.Value);
+
+            i++;
+        }
+
+        command.CommandText =
+            $"INSERT INTO {table}({fieldBuilder}) VALUES({valueBuilder});";
+
+        Console.WriteLine(command.CommandText);
+
+        command.ExecuteNonQuery();
+    }
+
+    public List<T> Find<T>(T? obj, List<string>? selectedFields = null)
+        where T : Model, new()
+    {
+        var table = ModelHelpers.GetTableName<T>();
+
+        var result = new List<T>();
+        StringBuilder commandBuilder = new();
+
+        using var command = _connection.CreateCommand();
+
+        commandBuilder.Append($"SELECT * FROM {table}");
+        if (obj is not null)
+        {
+            var pairs = Utils.GetPairs(obj);
+
+            var i = 0;
+            foreach (var (field, val) in pairs)
+            {
+                if (selectedFields is not null)
+                {
+                    if (!selectedFields.Contains(field)) continue;
+                }
+
+                if (i == 0) commandBuilder.Append(" WHERE ");
+
+                if (i > 0) commandBuilder.Append(" AND ");
+                if (val is null)
+                {
+                    commandBuilder.Append($"{field} IS NULL ");
+                }
+                else
+                {
+                    commandBuilder.Append($"{field} = @val{i} ");
+                    command.Parameters.AddWithValue($"@val{i}", val);
+                    i++;
+                }
+            }
+        }
+
+        command.CommandText = commandBuilder.ToString();
+        Debug.WriteLine(command.CommandText);
+
+        using var reader = command.ExecuteReader();
+        while (reader.Read())
+        {
+            result.Add(parseInto<T>(reader));
+        }
+
+        return result;
+    }
+
+    public T? First<T>(T? obj, List<string>? selectedFields = null) where T : Model, new()
+    {
+        var result = Find(obj, selectedFields);
+
+        return result.Count == 0 ? null : result[0];
+    }
+
+    public void Update<T>(
+        T updates, List<string>? updateFields, T conditions, List<string>? conditionFields
+    ) where T : Model, new()
+    {
+        var table = updates.TableName;
+
+        StringBuilder commandBuilder = new();
+        using var command = _connection.CreateCommand();
+        commandBuilder.Append($"UPDATE {table}");
+
+        var updatePairs = Utils.GetPairs(updates);
+        if (updatePairs.Length == 0) return;
+
+        // commandBuilder
+        //     .Append(" SET ")
+        //     .AppendJoin(
+        //         ", ",
+        //         updatePairs.Select(
+        //             (item, index) => item.Item2 is null
+        //                 ? $"{item.Item1} IS NULL"
+        //                 : $"{item.Item1} = @val{index}"
+        //         )
+        //     );
+
+        commandBuilder.Append(" SET ");
+
+        var i = 0;
+        foreach (var (field, val) in updatePairs)
+        {
+            if (updateFields is not null)
+            {
+                if (!updateFields.Contains(field)) continue;
+            }
+
+            if (i > 0) commandBuilder.Append(", ");
+
+            commandBuilder.Append($"{field} = @val{i}");
+            command.Parameters.AddWithValue($"@val{i}", val ?? DBNull.Value);
+
+            i++;
+        }
+
+        var conditionPairs = Utils.GetPairs(conditions);
+        if (conditionPairs.Length == 0) throw new Exception("Conditions cannot be empty");
+
+        // commandBuilder
+        //     .Append(" WHERE ")
+        //     .AppendJoin(" AND ",
+        //         conditionPairs.Select(
+        //             (item, index) => item.Item2 is null
+        //                 ? $"{item.Item1} IS NULL"
+        //                 : $"{item.Item1} = @cond{index}"
+        //         )
+        //     );
+
+        commandBuilder.Append(" WHERE ");
+
+        i = 0;
+        foreach (var (field, val) in conditionPairs)
+        {
+            if (conditionFields is not null)
+            {
+                if (!conditionFields.Contains(field)) continue;
+            }
+
+            if (i > 0) commandBuilder.Append(" AND ");
+
+            if (val is null)
+            {
+                commandBuilder.Append($"{field} IS NULL ");
+            }
+            else
+            {
+                commandBuilder.Append($"{field} = @cond{i} ");
+                command.Parameters.AddWithValue($"@cond{i}", val);
+                i++;
+            }
+        }
+
+        // foreach (SqliteParameter x in command.Parameters)
+        // {
+        //     Console.WriteLine($"{x.ParameterName} {x.DbType} {x.Value}");
+        // }
+
+        command.CommandText = commandBuilder.ToString();
+        Console.WriteLine(command.CommandText);
+        command.ExecuteNonQuery();
+    }
+
+    public void Delete<T>(T obj, List<string>? selectedFields = null) where T : Model, new()
+    {
+        var table = obj.TableName;
+
+        StringBuilder commandBuilder = new();
+        using var command = _connection.CreateCommand();
+
+        commandBuilder.Append($"DELETE FROM {table} WHERE ");
+        var pairs = Utils.GetPairs(obj);
+        if (pairs.Length == 0 || selectedFields?.Count == 0)
+            throw new Exception("Conditions cannot be empty");
+
+        var i = 0;
+        foreach (var (field, value) in pairs)
+        {
+            if (selectedFields is not null)
+            {
+                if (!selectedFields.Contains(field)) continue;
+            }
+
+            if (i > 0) commandBuilder.Append(" AND ");
+            if (value is null)
+            {
+                commandBuilder.Append($"{field} IS NULL ");
+            }
+            else
+            {
+                commandBuilder.Append($"{field} = @val{i}");
+                command.Parameters.AddWithValue($"@val{i}", value);
+                i++;
+            }
+        }
+
+        Debug.WriteLine(commandBuilder.ToString());
+        command.CommandText = commandBuilder.ToString();
+        command.ExecuteNonQuery();
     }
 
     public List<string> ListTables()
@@ -64,14 +290,16 @@ public class SqliteDriver : IDatabaseDriver
         return result;
     }
 
-    public void CreateTable<T>(bool deleteIfExist = false)
+    public void CreateTable<T>(bool deleteIfExist = false) where T : Model, new()
     {
+        Console.WriteLine(ModelHelpers.GetTableName<T>());
+
         bool primaryKeyFound = false;
 
         StringBuilder foreignConstraintBuilder = new();
         StringBuilder commandBuilder = new();
 
-        commandBuilder.AppendLine($"CREATE TABLE {typeof(T).Name} (");
+        commandBuilder.AppendLine($"CREATE TABLE {ModelHelpers.GetTableName<T>()} (");
         FieldInfo[] fields = typeof(T).GetFields(BindingFlags.Instance |
                                                  BindingFlags.Public |
                                                  BindingFlags.DeclaredOnly)
@@ -84,7 +312,8 @@ public class SqliteDriver : IDatabaseDriver
         {
             if (deleteIfExist)
             {
-                command.CommandText = $"DROP TABLE IF EXISTS {typeof(T).Name}";
+                command.CommandText =
+                    $"DROP TABLE IF EXISTS {ModelHelpers.GetTableName<T>()}";
                 command.ExecuteNonQuery();
             }
 
@@ -94,22 +323,26 @@ public class SqliteDriver : IDatabaseDriver
                     (SqliteFieldAttribute)Attribute.GetCustomAttribute(mem,
                         typeof(SqliteFieldAttribute))!;
 
-                string uniqueStr = dbAttr.Unique ? "UNIQUE" : "";
-                string nullableStr = dbAttr.Nullable ? "" : "NOT NULL";
-                string autoincrementStr = dbAttr.Autoincrement ? "AUTOINCREMENT" : "";
+                var uniqueStr = dbAttr.Unique ? "UNIQUE" : "";
+                var nullableStr = dbAttr.Nullable ? "" : "NOT NULL";
                 commandBuilder.Append(
-                    $"{mem.Name} {dbAttr.Type} {uniqueStr} {nullableStr} {autoincrementStr}");
+                    $"{mem.Name} {dbAttr.Type} {uniqueStr} {nullableStr}");
                 if (dbAttr.IsKey)
                 {
                     if (!primaryKeyFound)
                     {
                         primaryKeyFound = true;
                         commandBuilder.Append(" PRIMARY KEY");
+
+                        if (dbAttr.Autoincrement)
+                        {
+                            commandBuilder.Append(" AUTOINCREMENT");
+                        }
                     }
                     else
                     {
                         throw new Exception(
-                            $"Model '{typeof(T).Name}' attempted to declare more than 1 primary key.");
+                            $"Model '{ModelHelpers.GetTableName<T>()}' attempted to declare more than 1 primary key.");
                     }
                 }
 
@@ -119,7 +352,7 @@ public class SqliteDriver : IDatabaseDriver
                         $"    FOREIGN KEY({mem.Name}) REFERENCES {dbAttr.ForeignConstraint?.Item1}({dbAttr.ForeignConstraint?.Item2}),");
                 }
 
-                commandBuilder.AppendLine();
+                commandBuilder.AppendLine(",");
             }
 
             if (foreignConstraintBuilder.Length > 0)
@@ -129,7 +362,7 @@ public class SqliteDriver : IDatabaseDriver
 
             command.CommandText =
                 $"{commandBuilder.ToString().TrimEnd(" \n\r,".ToCharArray())}\n) STRICT;";
-            Debug.WriteLine(command.CommandText);
+            Console.WriteLine(command.CommandText);
             command.ExecuteNonQuery();
         }
     }
@@ -288,34 +521,35 @@ public class SqliteDriver : IDatabaseDriver
     {
         StringBuilder fieldBuilder = new();
         StringBuilder valueBuilder = new();
-        (string, object)[] valuePairs = Utils.GetPairs(values);
+        var valuePairs = Utils.GetPairs(values);
 
-        using (SqliteCommand command = _connection.CreateCommand())
+        Console.WriteLine(valuePairs.Length);
+
+        using var command = _connection.CreateCommand();
+
+        for (var i = 0; i < valuePairs.Length; i++)
         {
-            for (int i = 0; i < valuePairs.Length; i++)
-            {
-                var (field, val) = valuePairs[i];
-                if (i > 0) fieldBuilder.Append(", ");
-                fieldBuilder.Append(field);
+            var (field, val) = valuePairs[i];
+            if (i > 0) fieldBuilder.Append(", ");
+            fieldBuilder.Append(field);
 
-                if (i > 0) valueBuilder.Append(", ");
-                valueBuilder.Append($"@val{i}");
-                command.Parameters.AddWithValue($"@val{i}", val ?? DBNull.Value);
-            }
+            if (i > 0) valueBuilder.Append(", ");
+            valueBuilder.Append($"@val{i}");
+            command.Parameters.AddWithValue($"@val{i}", val ?? DBNull.Value);
+        }
 
-            command.CommandText =
-                $"INSERT INTO {table}({fieldBuilder.ToString()}) VALUES({valueBuilder.ToString()});";
-            Console.WriteLine(command.CommandText);
+        command.CommandText =
+            $"INSERT INTO {table}({fieldBuilder.ToString()}) VALUES({valueBuilder.ToString()});";
+        Console.WriteLine(command.CommandText);
 
-            try
-            {
-                command.ExecuteNonQuery();
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine("Error: " + ex.Message);
-                throw;
-            }
+        try
+        {
+            command.ExecuteNonQuery();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Error: " + ex.Message);
+            throw;
         }
     }
 
@@ -420,13 +654,13 @@ public class SqliteDriver : IDatabaseDriver
         return result;
     }
 
-    public List<T> Find<T>(object? conditions = null) where T : class, new()
+    public List<T> Find<T>(object? conditions = null) where T : Model, new()
     {
         List<T> result = new();
         StringBuilder commandBuilder = new();
         using (SqliteCommand command = _connection.CreateCommand())
         {
-            commandBuilder.Append($"SELECT * FROM {typeof(T).Name} ");
+            commandBuilder.Append($"SELECT * FROM {ModelHelpers.GetTableName<T>()} ");
             if (conditions != null)
             {
                 (string, object)[] conditionPairs = Utils.GetPairs(conditions);
@@ -508,13 +742,13 @@ public class SqliteDriver : IDatabaseDriver
         return result;
     }
 
-    public T? FindOne<T>(object conditions) where T : class, new()
+    public T? FindOne<T>(object conditions) where T : Model, new()
     {
         T? result = null;
         StringBuilder commandBuilder = new();
         using (SqliteCommand command = _connection.CreateCommand())
         {
-            commandBuilder.Append($"SELECT * FROM {typeof(T).Name} ");
+            commandBuilder.Append($"SELECT * FROM {ModelHelpers.GetTableName<T>()} ");
             (string, object)[] conditionPairs = Utils.GetPairs(conditions);
             if (conditionPairs.Length > 0)
             {

@@ -5,7 +5,7 @@ namespace SimpleEnterpriseFramework.Abstractions.App;
 public abstract class Form<T>(IDatabaseDriver db)
     where T : Model, new()
 {
-    public string TableName { get; } = Helpers.GetTableName<T>();
+    public string TableName { get; } = ModelHelpers.GetTableName<T>();
 
     public void Add(T obj)
     {

@@ -8,16 +8,21 @@ var dbPath = configuration.GetValue<string>("DatabasePath");
 var port = configuration.GetValue<int>("Port");
 var key = configuration.GetValue<string>("SecretKey");
 
-var f = new Framework(options =>
-{
-    options.SecretKey = key!;
-});
+var f = new Framework(options => { options.SecretKey = key!; });
 f.SetDatabaseDriver<SqliteDriver, SqliteDriverOptions>(options =>
 {
     options.UsePath(dbPath!);
 });
 
-var ui = f.CreateCrudApp<WebApp>();
-ui.Init();
-ui.RegisterForm<Product, ProductForm>();
-ui.Start();
+
+var m = f.Membership;
+// var result = m.Register("minhngkh@gmail.com", "minh134");
+var result = m.Login("minhngkh@gmail.com", "minh134", out var token);
+Console.WriteLine(result + ": " + token);
+// m.Setup();
+//
+// var ui = f.CreateCrudApp<WebApp>();
+// ui.Init();
+// ui.RegisterForm<Product, ProductForm>();
+// ui.RegisterForm<User, UserForm>();
+// ui.Start();

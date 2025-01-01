@@ -1,9 +1,23 @@
+using System.Diagnostics.CodeAnalysis;
+
 namespace SimpleEnterpriseFramework.Abstractions;
 
 public interface IMembership
 {
-    bool IsTokenBlacklisted(string token);
-    String Login(String username, String password);
-    bool Register(string username, string password, string role = "User");
+    /**
+     * Set up the all the necessary tables for the framework to work
+     */
+    void Setup();
+
+    bool Login(string username, string password, [MaybeNullWhen(false)] out string token);
+
+    bool Register(string username, string password, string? role = default);
+
+    string RecoverPassword(string username);
+
+    string ChangePassword(string username, string newPassword, string token);
+
+    bool IsLoggedIn(string token);
+
     void Logout(string token);
 }
