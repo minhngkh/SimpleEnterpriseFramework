@@ -11,7 +11,9 @@
     </ItemGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\SimpleEnterpriseFramework.App.Web\SimpleEnterpriseFramework.App.Web.csproj" />
       <ProjectReference Include="..\SimpleEnterpriseFramework.Core\SimpleEnterpriseFramework.Core.csproj" />
+      <ProjectReference Include="..\SimpleEnterpriseFramework.Data.Sqlite\SimpleEnterpriseFramework.Data.Sqlite.csproj" />
     </ItemGroup>
 
 </Project>

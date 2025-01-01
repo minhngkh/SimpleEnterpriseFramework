@@ -138,6 +138,8 @@ public class Program
             string renderedLogin = loginPage(null); 
             return Results.Text(renderedLogin, "text/html");
         });
+        
+        app.Use((context, n))
 
         //Handle login POST request
         app.MapPost("/login", async (HttpContext context) =>
@@ -213,6 +215,7 @@ public class Program
             }
             return Results.BadRequest("Table name is missing.");
         });
+        
 
         app.MapPost("/update", async (HttpContext context) =>
         {

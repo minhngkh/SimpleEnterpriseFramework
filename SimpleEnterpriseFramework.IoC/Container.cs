@@ -1,4 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
+using SimpleEnterpriseFramework.IoC.Attributes;
 
 namespace SimpleEnterpriseFramework.IoC;
 
@@ -6,7 +8,7 @@ public interface IContainer
 {
     void Register<TService, TImplementation>()
         where TImplementation : TService;
-    
+
     void RegisterSingleton<TService, TImplementation>() where TImplementation : TService;
     void RegisterSingleton<TService>(TService instance);
     void RegisterTransient<TService, TImplementation>() where TImplementation : TService;
@@ -14,7 +16,7 @@ public interface IContainer
     // void Register<TService>(Func<TService> factory);
     // void Register<TService>(Func<IContainer, TService> factory);
     // void Register<TService>(Func<IContainer, TService> factory, ServiceLifetime lifetime);
-    
+
     TService Resolve<TService>();
     object Resolve(Type serviceType);
     bool TryResolve<TService>([MaybeNullWhen(false)] out TService service);
@@ -156,6 +158,23 @@ public class Container : IContainer
             .ToArray();
 
         instance = Activator.CreateInstance(implementationType, parameters);
-        return instance != null;
+        if (instance is null)
+        {
+            return false;
+        }
+
+        foreach (var property in implementationType
+                     .GetProperties(BindingFlags.Public | BindingFlags.NonPublic |
+                                    BindingFlags.Instance)
+                     .Where(p =>
+                         p.CanWrite &&
+                         p.GetCustomAttributes<PropertyInjectionAttribute>().Any()
+                     ))
+        {
+            var propertyValue = Resolve(property.PropertyType);
+            property.SetValue(instance, propertyValue);
+        }
+
+        return true;
     }
 }

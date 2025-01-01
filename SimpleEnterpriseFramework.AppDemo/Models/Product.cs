@@ -1,15 +1,19 @@
-using SEF.UI;
-using SEF.Repository;
+using SimpleEnterpriseFramework.App;
+using SimpleEnterpriseFramework.Data;
 
-public class Product {
-#pragma warning disable 0414
+namespace SimpleEnterpriseFramework.AppDemo.Models;
+
+public class Product : Model {
     public Int64? Id = null;
     public string name = "";
     public double price = 0;
-#pragma warning restore 0414
+
+
+    public override string TableName => "products";
 }
 
-public class ProductForm : UIForm<Product> {
-    public ProductForm(IRepository repo): base(repo) {
+public class ProductForm : Form<Product> {
+    public ProductForm(IDatabaseDriver db) : base(db)
+    {
     }
 }
