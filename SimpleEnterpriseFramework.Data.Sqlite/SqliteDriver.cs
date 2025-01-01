@@ -31,6 +31,7 @@ public class SqliteDriver : IDatabaseDriver
         using var command = _connection.CreateCommand();
 
         var i = 0;
+        
         foreach (var (prop, name, val) in valuePairs)
         {
             if (selectedFields is not null)
@@ -750,7 +751,7 @@ public class SqliteDriver : IDatabaseDriver
         return result;
     }
 
-    public List<T> Find<T>(object? conditions = null) where T : Model, new()
+    public List<T> FindV0<T>(object? conditions = null) where T : Model, new()
     {
         List<T> result = new();
         StringBuilder commandBuilder = new();
@@ -914,5 +915,12 @@ public class SqliteDriver : IDatabaseDriver
 
             return result;
         }
+    }
+
+    public List<ModelFieldInfo> GetFields<T>(T obj) where T : Model, new()
+    {
+        return Utils.GetProps<T>(obj)
+            .Select(x => new ModelFieldInfo {Alias = x.prop, Name = x.name, Value = x.val})
+            .ToList();
     }
 }

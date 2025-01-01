@@ -14,7 +14,6 @@ public interface IDatabaseDriver {
     public void DeleteRow(string table, string condition);
     public void DeleteRow(string table, object condition);
 
-
     public void Update<T>(
         T updates, List<string>? updateFields, T conditions, List<string>? conditionFields
     ) where T : Model, new();
@@ -28,11 +27,13 @@ public interface IDatabaseDriver {
 
     public List<T> Find<T>(T? obj, List<string>? selectedFields = null) where T : Model, new();
     public List<object[]> Find(string table, object? conditions = null);
-    public List<T> Find<T>(object? conditions = null) where T: Model, new();
+    public List<T> FindV0<T>(object? conditions = null) where T: Model, new();
 
     public T? First<T>(T? obj, List<string>? selectedFields = null) where T : Model, new();
     public object[]? FindOne(string table, object conditions);
     public T? FindOne<T>(object condition) where T: Model, new();
 
     public string GetPrimaryColumn(string table);
+    
+    public List<ModelFieldInfo> GetFields<T>(T obj) where T : Model, new();
 }

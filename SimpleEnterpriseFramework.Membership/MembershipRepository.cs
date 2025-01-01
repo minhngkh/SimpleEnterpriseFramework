@@ -73,7 +73,7 @@ public class MembershipRepository(IDatabaseDriver db)
 
     public void AddRole(string roleName)
     {
-        var roles = db.Find<Role>(new { Name = roleName });
+        var roles = db.FindV0<Role>(new { Name = roleName });
         if (roles.Count != 0)
         {
             Console.WriteLine("Role name exists.");
@@ -99,7 +99,7 @@ public class MembershipRepository(IDatabaseDriver db)
 
     public void DeleteUser(String userName)
     {
-        List<User> users = db.Find<User>(new { Username = userName });
+        List<User> users = db.FindV0<User>(new { Username = userName });
         if (users.Count == 0)
         {
             Console.WriteLine("User not found.");
@@ -120,7 +120,7 @@ public class MembershipRepository(IDatabaseDriver db)
 
     public void DeleteRole(String roleName)
     {
-        List<Role> roles = db.Find<Role>(new { Name = roleName });
+        List<Role> roles = db.FindV0<Role>(new { Name = roleName });
         if (roles.Count == 0)
         {
             Console.WriteLine("Role not found.");
@@ -141,7 +141,7 @@ public class MembershipRepository(IDatabaseDriver db)
     public void modifyUser(String userNameIdentify, String userName, String password,
         String roleName)
     {
-        List<Role> roles = db.Find<Role>(new { Name = roleName });
+        List<Role> roles = db.FindV0<Role>(new { Name = roleName });
         if (roles.Count == 0)
         {
             Console.WriteLine("Role not found.");

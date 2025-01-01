@@ -28,20 +28,20 @@
             </tr>
         </thead>
         <tbody id="table-body">
-            {{#each data}}
-                <tr data-id="{{Id}}" ondblclick='(() => window.openUpdateForm({ {{#each this}} {{#ifIsNull this}} "{{@key}}": null, {{else}} "{{@key}}": "{{this}}", {{/ifIsNull}} {{/each}} }))(); return false;'>
-                    {{#each this}}
-                        {{#ifIsNull this}}
-                            <td id="{{@key}}" class="disabled">{{this}}</td>
-                        {{else}}
-                            <td id="{{@key}}">{{this}}</td>
-                        {{/ifIsNull}}
-                    {{/each}}
-                    <td class="no-border">
-                        <button class="delete-button" onclick='(() => window.deleteRow({ {{#each this}} {{#ifIsNull this}} "{{@key}}": null, {{else}} "{{@key}}": "{{this}}", {{/ifIsNull}} {{/each}} }))(); return false;'>Delete</button>
-                    </td>
-                </tr>
-            {{/each}}
+        {{#each data}}
+            <tr ondblclick='(() => window.openUpdateForm({ {{#each this}} {{#ifIsNull this}} "{{name}}": null, {{else}} "{{name}}": "{{value}}", {{/ifIsNull}} {{/each}} }))(); return false;'>
+                {{#each this}}
+                    {{#ifIsNull this}}
+                        <td id="{{name}}" class="disabled">{{value}}</td>
+                    {{else}}
+                        <td id="{{name}}">{{value}}</td>
+                    {{/ifIsNull}}
+                {{/each}}
+                <td class="no-border">
+                    <button class="delete-button" onclick='(() => window.deleteRow({ {{#each this}} {{#ifIsNull this}} "{{name}}": null, {{else}} "{{name}}": "{{value}}", {{/ifIsNull}} {{/each}} }))(); return false;'>Delete</button>
+                </td>
+            </tr>
+        {{/each}}
         </tbody>
     </table>
 

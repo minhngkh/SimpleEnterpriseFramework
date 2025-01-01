@@ -6,16 +6,16 @@ namespace SimpleEnterpriseFramework.AppDemo.Models;
 
 public class Product : Model
 {
-    [SqliteField("INTEGER", "id", IsKey = true, Autoincrement = true)]
-    public long Id;
+    [SqliteProperty("INTEGER", "id", IsKey = true, Autoincrement = true)]
+    public long Id { get; set; }
 
-    [SqliteField("TEXT", "name", Nullable = false)]
-    public string Name;
-    
-    [SqliteField("REAL", "price", Nullable = false)]
-    public double Price;
-    
-    public override string TableName => "Product";
+    [SqliteProperty("TEXT", "name", Nullable = false)]
+    public string Name { get; set; }
+
+    [SqliteProperty("REAL", "price", Nullable = false)]
+    public double Price { get; set; }
+
+    public override string TableName => "product";
 }
 
 public class ProductForm(IDatabaseDriver db) : Form<Product>(db);

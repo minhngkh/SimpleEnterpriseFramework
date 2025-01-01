@@ -4,8 +4,9 @@ public class SqliteDriverOptions
 {
     public string ConnectionString { get; set; } = "";
 
-    public void UsePath(string path)
+    public SqliteDriverOptions UsePath(string path)
     {
         ConnectionString = $"Data Source={path}";
+        return this;
     }
 }
