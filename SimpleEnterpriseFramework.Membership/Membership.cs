@@ -26,10 +26,11 @@ public class Membership : IMembership
         _passwordHasher = new PasswordHasher();
     }
 
-    public void Setup()
+    public void Setup(bool toReset = false) 
     {
-        _repo.CreateRoleTable();
-        _repo.CreateUserTable();
+        _repo.CreateRoleTable(toReset);
+        _repo.CreateUserTable(toReset);
+        
         _repo.AddRole("member");
         _repo.AddRole("admin");
     }
@@ -60,6 +61,8 @@ public class Membership : IMembership
                 return false;
             }
             
+            Console.WriteLine(user);
+            
             if (!BCrypt.Net.BCrypt.EnhancedVerify(password, user.Password))
             {
                 Console.WriteLine("Password is incorrect.");
@@ -72,7 +75,7 @@ public class Membership : IMembership
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Login error: {ex.Message}");
+            Console.WriteLine($"Login error: {ex}");
             token = default;
             return false;
         }

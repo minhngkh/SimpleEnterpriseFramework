@@ -5,11 +5,11 @@ namespace SimpleEnterpriseFramework.Membership.Models;
 
 public class Role : Model
 {
-    [SqliteField("INTEGER", Unique = true, IsKey = true)]
-    public long Id;
+    [SqliteProperty("INTEGER", "id", IsKey = true, Autoincrement = true)]
+    public long Id { get; set; }
 
-    [SqliteField("TEXT", Unique = true, Nullable = false)]
-    public string Name;
+    [SqliteProperty("TEXT", "name", Unique = true, Nullable = false)]
+    public string Name { get; set; }
 
     public override string TableName => "_sef_role";
 }

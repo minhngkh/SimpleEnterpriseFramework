@@ -5,17 +5,17 @@ namespace SimpleEnterpriseFramework.Membership.Models;
 
 public class User : Model
 {
-    [SqliteField("INTEGER", IsKey = true, Autoincrement = true)]
-    public long Id;
+    [SqliteProperty("INTEGER", "id", IsKey = true, Autoincrement = true)]
+    public long Id { get; set; }
 
-    [SqliteField("TEXT", Unique = true, Nullable = false)]
-    public string Username;
+    [SqliteProperty("TEXT", "username", Unique = true, Nullable = false)]
+    public string Username { get; set; }
 
-    [SqliteField("TEXT", Nullable = false)]
-    public string Password;
+    [SqliteProperty("TEXT", "password", Nullable = false)]
+    public string Password { get; set; }
 
-    [SqliteField("INTEGER", "_sef_role", "Id", Nullable = true)]
-    public long? RoleId;
+    [SqliteProperty("INTEGER", "role_id", "_sef_role", "Id", Nullable = true)]
+    public long? RoleId {get; set;}
 
     public override string TableName => "_sef_user";
 }

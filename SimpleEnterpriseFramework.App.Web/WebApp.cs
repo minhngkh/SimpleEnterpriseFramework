@@ -81,11 +81,12 @@ public class WebApp: CrudApp {
         List<ColumnInfo> columnsInfo = form.GetColumnsInfo();
         tableNames.Add(form.TableName);
         Console.WriteLine($"/table/{tableName}");
-        app.MapGet($"/table/{tableName}", (HttpContext context) => {
+        app.MapGet($"/table/{tableName}", (HttpContext context) =>
+        {
             var parameters = new {
                 tableName = tableName,
                 columns = columnsInfo,
-                data = form.GetAllData(),
+                data = form.GetAllData()
             };
             return Results.Content(tableTemplate(parameters), "text/html");
         });

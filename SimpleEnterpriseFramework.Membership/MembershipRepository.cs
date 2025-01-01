@@ -7,12 +7,12 @@ public class MembershipRepository(IDatabaseDriver db)
 {
     PasswordHasher _hasher = new PasswordHasher();
 
-    public void CreateUserTable()
+    public void CreateUserTable(bool toReset = false)
     {
         // Create user table by calling repository
         try
         {
-            db.CreateTable<User>();
+            db.CreateTable<User>(toReset);
             Console.WriteLine("User table created successfully.");
         }
         catch (Exception ex)
@@ -22,11 +22,11 @@ public class MembershipRepository(IDatabaseDriver db)
         }
     }
 
-    public void CreateRoleTable()
+    public void CreateRoleTable(bool toReset = false)
     {
         try
         {
-            db.CreateTable<Role>();
+            db.CreateTable<Role>(toReset);
             Console.WriteLine("Role table created successfully.");
         }
         catch (Exception ex)

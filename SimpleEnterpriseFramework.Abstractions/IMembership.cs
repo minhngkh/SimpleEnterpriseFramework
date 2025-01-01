@@ -7,7 +7,7 @@ public interface IMembership
     /**
      * Set up the all the necessary tables for the framework to work
      */
-    void Setup();
+    void Setup(bool toReset = false);
 
     bool Login(string username, string password, [MaybeNullWhen(false)] out string token);
 

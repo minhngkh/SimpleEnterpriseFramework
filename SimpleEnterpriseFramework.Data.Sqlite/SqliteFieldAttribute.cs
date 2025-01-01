@@ -4,16 +4,18 @@ namespace SimpleEnterpriseFramework.Data.Sqlite;
 public class SqliteFieldAttribute : Attribute
 {
     public string Type;
+    public string Name;
     public bool Unique = false;
     public bool IsKey = false;
     public bool Nullable = true;
     public bool Autoincrement = false;
-    public (string, string)? ForeignConstraint = null;
+    public (string table, string field)? ForeignConstraint = null;
     static string[] allTypes = { "TEXT", "INTEGER", "REAL", "BLOB", "ANY" };
 
-    public SqliteFieldAttribute(string type)
+    public SqliteFieldAttribute(string type, string name)
     {
         this.Type = type;
+        this.Name = name;
         if (!allTypes.Contains(type.ToUpper()))
         {
             throw new Exception(
@@ -21,8 +23,9 @@ public class SqliteFieldAttribute : Attribute
         }
     }
 
-    public SqliteFieldAttribute(string type, string referencedTable, string referencedField)
+    public SqliteFieldAttribute(string type, string name, string referencedTable, string referencedField)
     {
+        this.Name = name;
         this.ForeignConstraint = (referencedTable, referencedField);
         this.Type = type;
         if (!allTypes.Contains(type.ToUpper()))

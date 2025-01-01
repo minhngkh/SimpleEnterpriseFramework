@@ -16,9 +16,10 @@ f.SetDatabaseDriver<SqliteDriver, SqliteDriverOptions>(options =>
 
 
 var m = f.Membership;
-// var result = m.Register("minhngkh@gmail.com", "minh134");
-var result = m.Login("minhngkh@gmail.com", "minh134", out var token);
-Console.WriteLine(result + ": " + token);
+// m.Setup(true);
+var result = m.Register("minhngkh@gmail.com", "minh134");
+var result2 = m.Login("minhngkh@gmail.com", "minh134", out var token);
+Console.WriteLine(result2 + ": " + token);
 // m.Setup();
 //
 // var ui = f.CreateCrudApp<WebApp>();
