@@ -1,4 +1,5 @@
 ﻿using SimpleEnterpriseFramework.IoC;
+using SimpleEnterpriseFramework.IoC.Attributes;
 
 namespace SimpleEnterpriseFramework.Tests;
 
@@ -18,10 +19,10 @@ public class IocTests
         public ITestService TestService { get; set; } = testService;
     }
     
-    [Injection(ServiceLifetime.Singleton)]
+    [ClassInjection(ServiceLifetime.Singleton)]
     public class SingletonService : ITestService;
     
-    [Injection(ServiceLifetime.Transient)]
+    [ClassInjection(ServiceLifetime.Transient)]
     public class TransientService : ITestService;
 
     

@@ -16,7 +16,7 @@ public class Framework
         _container.RegisterSingleton(db);
     }
 
-    public T CreateEditorApp<T>() where T : App.Application
+    public T CreateEditorApp<T>() where T : App.CrudApp
     {
         return _container.Resolve<T>();
     }

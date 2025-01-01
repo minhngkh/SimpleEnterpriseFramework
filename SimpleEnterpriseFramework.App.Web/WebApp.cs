@@ -7,7 +7,7 @@ using SimpleEnterpriseFramework.Data;
 
 namespace SimpleEnterpriseFramework.App.Web;
 
-public class WebApp: Application {
+public class WebApp: CrudApp {
     string outputDirectory;
 
     WebApplication app;

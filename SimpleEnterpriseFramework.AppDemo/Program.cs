@@ -9,7 +9,5 @@ ui.Init();
 // ui.Register<User, UserForm>(new UserForm(repo));
 // ui.Register<Product, ProductForm>(new ProductForm(repo));
 
-ui.RegisterForms([
-    new ProductForm(repo),
-]);
+ui.RegisterForm<Product, ProductForm>();
 ui.Start();

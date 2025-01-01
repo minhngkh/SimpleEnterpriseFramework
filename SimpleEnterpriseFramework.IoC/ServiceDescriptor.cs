@@ -1,3 +1,5 @@
+using SimpleEnterpriseFramework.IoC.Attributes;
+
 namespace SimpleEnterpriseFramework.IoC;
 
 public class ServiceDescriptor
@@ -19,7 +21,7 @@ public class ServiceDescriptor
         ImplementationType = implementationType;
         
         
-        if (Attribute.GetCustomAttribute(implementationType, typeof(InjectionAttribute)) is InjectionAttribute attribute)
+        if (Attribute.GetCustomAttribute(implementationType, typeof(ClassInjectionAttribute)) is ClassInjectionAttribute attribute)
         {
             Lifetime = attribute.Lifetime;
         }

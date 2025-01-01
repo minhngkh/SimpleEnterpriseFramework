@@ -2,43 +2,38 @@ using SimpleEnterpriseFramework.Data;
 
 namespace SimpleEnterpriseFramework.App;
 
-public abstract class Form<T> where T : Model, new()
+public abstract class Form<T>(IDatabaseDriver db)
+    where T : Model, new()
 {
-    private IDatabaseDriver _db;
-    public string TableName { get; } = typeof(T).Name;
+    public string TableName { get; } = Helpers.GetTableName<T>();
 
-    public Form(IDatabaseDriver db)
+    public void Add(T obj)
     {
-        _db = db;
+        db.Add(obj);
     }
 
-    public virtual void Add(T obj)
+    public void Add(Dictionary<string, object> values)
     {
-        _db.Add(obj);
+        db.Add(TableName, values);
     }
 
-    public virtual void Add(Dictionary<string, object> values)
+    public void Update(T oldObj, T newObj)
     {
-        _db.Add(TableName, values);
+        db.UpdateRow(oldObj, newObj);
     }
 
-    public virtual void Update(T oldObj, T newObj)
+    public void Delete(T obj)
     {
-        _db.UpdateRow(oldObj, newObj);
+        db.DeleteRow(TableName, obj);
     }
 
-    public virtual void Delete(T obj)
+    public List<ColumnInfo> GetColumnsInfo()
     {
-        _db.DeleteRow(TableName, obj);
+        return db.ListColumns(TableName);
     }
 
-    public virtual List<ColumnInfo> GetColumnsInfo()
+    public List<T> GetAllData()
     {
-        return _db.ListColumns(TableName);
-    }
-
-    public virtual List<T> GetAllData()
-    {
-        return _db.Find<T>();
+        return db.Find<T>();
     }
 }

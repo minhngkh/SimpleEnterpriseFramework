@@ -12,8 +12,4 @@ public class Product : Model {
     public override string TableName => "products";
 }
 
-public class ProductForm : Form<Product> {
-    public ProductForm(IDatabaseDriver db) : base(db)
-    {
-    }
-}
+public class ProductForm(IDatabaseDriver db) : Form<Product>(db);

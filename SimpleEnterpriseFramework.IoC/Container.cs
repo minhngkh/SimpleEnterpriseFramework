@@ -57,6 +57,8 @@ public class Container : IContainer
             instance.GetType(),
             ServiceLifetime.Singleton
         );
+
+        _singletonStore.Add(instance);
     }
 
     public void RegisterTransient<TService, TImplementation>()
@@ -121,8 +123,11 @@ public class Container : IContainer
     {
         if (!_services.TryGetValue(serviceType, out var descriptor))
         {
-            service = default;
-            return false;
+            // service = default;
+            // return false;
+
+            // Attempt to create instance for unregistered service as Transient
+            return TryCreateInstance(serviceType, out service);
         }
 
         switch (descriptor.Lifetime)
@@ -149,11 +154,18 @@ public class Container : IContainer
         }
     }
 
+    // TODO: Implement factory registration
     private bool TryCreateInstance(Type implementationType,
         [MaybeNullWhen(false)] out object instance)
     {
-        var constructor = implementationType.GetConstructors().Single();
-        var parameters = constructor.GetParameters()
+        var constructor = implementationType.GetConstructors()
+            .FirstOrDefault(c =>
+                c.GetCustomAttributes<ConstructorInjectionAttribute>().Any()
+            );
+
+        constructor ??= implementationType.GetConstructors().FirstOrDefault();
+
+        var parameters = constructor?.GetParameters()
             .Select(param => Resolve(param.ParameterType))
             .ToArray();
 
