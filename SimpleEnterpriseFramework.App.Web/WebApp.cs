@@ -3,7 +3,8 @@ using System.Reflection;
 using System.Text;
 using HandlebarsDotNet;
 using Newtonsoft.Json;
-using SimpleEnterpriseFramework.Data;
+using SimpleEnterpriseFramework.Abstractions.App;
+using SimpleEnterpriseFramework.Abstractions.Data;
 
 namespace SimpleEnterpriseFramework.App.Web;
 
@@ -21,7 +22,7 @@ public class WebApp: CrudApp {
         _options = options;
         this.app = WebApplication.Create([]);
         this.outputDirectory = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!;
-        string tableTemplatePath = Path.Combine(outputDirectory, "UI", "Templates", "table.hbs");
+        string tableTemplatePath = Path.Combine(outputDirectory, "Templates", "table.hbs");
         string tableTemplate = File.ReadAllText(tableTemplatePath);
         this.tableTemplate = Handlebars.Compile(tableTemplate);
         this.tableNames = [];
@@ -41,7 +42,7 @@ public class WebApp: CrudApp {
             }
         });
 
-        string formTemplatePath = Path.Combine(outputDirectory, "UI", "Templates", "form.hbs");
+        string formTemplatePath = Path.Combine(outputDirectory, "Templates", "form.hbs");
         string formTemplate = File.ReadAllText(formTemplatePath);
         Handlebars.RegisterTemplate("form", formTemplate);
 
@@ -121,7 +122,7 @@ public class WebApp: CrudApp {
     }
 
     public void Start() {
-        string indexTemplatePath = Path.Combine(outputDirectory, "UI", "Templates", "index.hbs");
+        string indexTemplatePath = Path.Combine(outputDirectory, "Templates", "index.hbs");
         string indexTemplate = File.ReadAllText(indexTemplatePath);
         HandlebarsTemplate<object, object> indexPage = Handlebars.Compile(indexTemplate);
         this.app.MapGet("/", (HttpContext context) =>

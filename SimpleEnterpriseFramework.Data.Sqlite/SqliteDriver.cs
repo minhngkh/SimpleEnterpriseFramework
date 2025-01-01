@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Reflection;
 using System.Text;
 using Microsoft.Data.Sqlite;
+using SimpleEnterpriseFramework.Abstractions.Data;
 
 namespace SimpleEnterpriseFramework.Data.Sqlite;
 
@@ -176,6 +177,58 @@ public class SqliteDriver : IDatabaseDriver
         using (SqliteCommand command = _connection.CreateCommand())
         {
             command.CommandText = $"UPDATE {table} SET {updateStatement} WHERE {condition}";
+            command.ExecuteNonQuery();
+        }
+    }
+
+    // TODO: fix these 3 shenanigans
+    public void UpdateRow(string table, object? conditions, object updates)
+    {
+        StringBuilder commandBuilder = new();
+        using (SqliteCommand command = _connection.CreateCommand())
+        {
+            commandBuilder.Append($"UPDATE {table}");
+
+            (string, object)[] updatePairs = Utils.GetPairs(updates);
+            Debug.Assert(updatePairs.Length > 0);
+
+            commandBuilder.Append(" SET ")
+                .AppendJoin(", ",
+                    updatePairs.Select((item, index) => $"{item.Item1} = @val{index}"));
+            for (int i = 0; i < updatePairs.Length; i++)
+            {
+                command.Parameters.AddWithValue($"@val{i}", updatePairs[i].Item2);
+            }
+
+            if (conditions != null)
+            {
+                (string, object)[]
+                    conditionPairs =
+                        Utils.GetPairs(
+                            conditions); // conditions.GetPairs().Where(x => x.Item2 != null).ToArray()!;
+                if (conditionPairs.Length > 0)
+                {
+                    commandBuilder.Append(" WHERE ")
+                        .AppendJoin(" AND ",
+                            conditionPairs.Select((item, index) =>
+                                item.Item2 == DBNull.Value
+                                    ? $"{item.Item1} IS NULL"
+                                    : $"{item.Item1} = @cond{index}"));
+                    for (int i = 0; i < conditionPairs.Length; i++)
+                    {
+                        command.Parameters.AddWithValue($"@cond{i}",
+                            conditionPairs[i].Item2);
+                    }
+                }
+            }
+
+            foreach (SqliteParameter x in command.Parameters)
+            {
+                Console.WriteLine($"{x.ParameterName} {x.DbType} {x.Value}");
+            }
+
+            command.CommandText = commandBuilder.ToString();
+            Console.WriteLine(command.CommandText);
             command.ExecuteNonQuery();
         }
     }

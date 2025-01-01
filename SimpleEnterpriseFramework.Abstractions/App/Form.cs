@@ -1,6 +1,6 @@
-using SimpleEnterpriseFramework.Data;
+using SimpleEnterpriseFramework.Abstractions.Data;
 
-namespace SimpleEnterpriseFramework.App;
+namespace SimpleEnterpriseFramework.Abstractions.App;
 
 public abstract class Form<T>(IDatabaseDriver db)
     where T : Model, new()

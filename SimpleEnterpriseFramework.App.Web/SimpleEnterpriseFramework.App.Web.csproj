@@ -13,21 +13,9 @@
     </ItemGroup>
 
     <ItemGroup>
-      <Content Update="Templates\add.hbs">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </Content>
-      <Content Update="Templates\form.hbs">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </Content>
-      <Content Update="Templates\index.hbs">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </Content>
-      <Content Update="Templates\table.hbs">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </Content>
-      <Content Update="Templates\users.hbs">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </Content>
+        <Content Include="Templates\**">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </Content>
     </ItemGroup>
 
     <ItemGroup>
@@ -36,7 +24,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\SimpleEnterpriseFramework\SimpleEnterpriseFramework.csproj" />
+      <ProjectReference Include="..\SimpleEnterpriseFramework.Abstractions\SimpleEnterpriseFramework.Abstractions.csproj" />
     </ItemGroup>
 
 </Project>

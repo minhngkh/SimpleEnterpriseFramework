@@ -11,7 +11,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\SimpleEnterpriseFramework\SimpleEnterpriseFramework.csproj" />
+      <ProjectReference Include="..\SimpleEnterpriseFramework.Abstractions\SimpleEnterpriseFramework.Abstractions.csproj" />
     </ItemGroup>
 
 </Project>

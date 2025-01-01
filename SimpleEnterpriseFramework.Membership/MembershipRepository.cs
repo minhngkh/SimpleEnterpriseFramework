@@ -1,44 +1,47 @@
-using System.Security.Cryptography;
+using SimpleEnterpriseFramework.Abstractions.Data;
+using SimpleEnterpriseFramework.Data.Sqlite;
 
 namespace SimpleEnterpriseFramework.Membership;
 
-
-struct Role {
-    [DbField("INTEGER", Unique = true, IsKey = true)]
+class Role
+{
+    [SqliteField("INTEGER", Unique = true, IsKey = true)]
     public int Id;
 
-    [DbField("TEXT", Unique = true, Nullable = false)]
+    [SqliteField("TEXT", Unique = true, Nullable = false)]
     public string Name;
 }
 
-struct User {
-    [DbField("INTEGER", Unique = true, IsKey = true)]
+class User
+{
+    [SqliteField("INTEGER", Unique = true, IsKey = true)]
     public int Id;
 
-    [DbField("TEXT", Unique = true, Nullable = false)]
+    [SqliteField("TEXT", Unique = true, Nullable = false)]
     public string Username;
 
-    [DbField("TEXT", Nullable = false)]
-    public string Password;
+    [SqliteField("TEXT", Nullable = false)] public string Password;
 
-    [DbField("INTEGER", "Role", "Id", Nullable = false)]
+    [SqliteField("INTEGER", "Role", "Id", Nullable = false)]
     public int RoleId;
 }
-public class MembershipRepository
+
+public class MembershipRepository(IDatabaseDriver db)
 {
-    IRepository _repository = new SqliteRepository("Data Source=new.db");
     PasswordHasher _hasher = new PasswordHasher();
+
     public void CreateUserTable()
     {
         // Create user table by calling repository
         try
         {
-            _repository.CreateTable<User>();
+            db.CreateTable<User>();
             Console.WriteLine("User table created successfully.");
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"An error occurred while creating the user table: {ex.Message}");
+            Console.WriteLine(
+                $"An error occurred while creating the user table: {ex.Message}");
         }
     }
 
@@ -46,32 +49,33 @@ public class MembershipRepository
     {
         try
         {
-            _repository.CreateTable<Role>();
+            db.CreateTable<Role>();
             Console.WriteLine("Role table created successfully.");
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"An error occurred while creating the role table: {ex.Message}");
+            Console.WriteLine(
+                $"An error occurred while creating the role table: {ex.Message}");
         }
     }
 
     public void CreateKeyTable()
     {
-
     }
 
     public bool AddUser(String userName, String password, String roleName)
     {
-        List<Role> roles =  _repository.Find<Role>(new {Name = roleName});
+        List<Role> roles = db.Find<Role>(new { Name = roleName });
         Console.WriteLine(roleName);
         if (roles.Count == 0)
         {
             Console.WriteLine("Role name does not exist.");
             return false;
         }
+
         try
         {
-            _repository.Add(new User()
+            db.Add(new User()
             {
                 Username = userName,
                 Password = _hasher.HashPassword(password),
@@ -81,7 +85,8 @@ public class MembershipRepository
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"An error occurred while creating the user table: {ex.Message}");
+            Console.WriteLine(
+                $"An error occurred while creating the user table: {ex.Message}");
         }
 
         return true;
@@ -89,14 +94,15 @@ public class MembershipRepository
 
     public void AddRole(String roleName)
     {
-        List<Role> roles =  _repository.Find<Role>(new {Name = roleName});
+        List<Role> roles = db.Find<Role>(new { Name = roleName });
         if (roles.Count != 0)
         {
             Console.WriteLine("Role name exists.");
         }
+
         try
         {
-            _repository.Add(new Role()
+            db.Add(new Role()
             {
                 Name = roleName,
             });
@@ -104,52 +110,56 @@ public class MembershipRepository
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"An error occurred while creating the role table: {ex.Message}");
+            Console.WriteLine(
+                $"An error occurred while creating the role table: {ex.Message}");
         }
     }
 
     public void DeleteUser(String userName)
     {
-        List<User> users = _repository.Find<User>(new { Username = userName });
+        List<User> users = db.Find<User>(new { Username = userName });
         if (users.Count == 0)
         {
             Console.WriteLine("User not found.");
             return;
         }
+
         try
         {
-            _repository.DeleteRow("User", new { Username = userName });
+            db.DeleteRow("User", new { Username = userName });
             Console.WriteLine(users[0].Username + " deleted successfully.");
         }
-        catch(Exception ex)
+        catch (Exception ex)
         {
             Console.WriteLine($"Could not delete user.: {ex.Message}");
         }
     }
-    
+
 
     public void DeleteRole(String roleName)
     {
-        List<Role> roles = _repository.Find<Role>(new { Name = roleName });
+        List<Role> roles = db.Find<Role>(new { Name = roleName });
         if (roles.Count == 0)
         {
             Console.WriteLine("Role not found.");
             return;
         }
+
         try
         {
-            _repository.DeleteRow("Role", new { Name = roleName });
+            db.DeleteRow("Role", new { Name = roleName });
             Console.WriteLine(roles[0].Name + " deleted successfully.");
         }
-        catch(Exception ex)
+        catch (Exception ex)
         {
             Console.WriteLine($"Could not delete role.: {ex.Message}");
         }
     }
 
-    public void modifyUser(String userNameIdentify, String userName, String password, String roleName)
+    public void modifyUser(String userNameIdentify, String userName, String password,
+        String roleName)
     {
-        List<Role> roles = _repository.Find<Role>(new { Name = roleName });
+        List<Role> roles = db.Find<Role>(new { Name = roleName });
         if (roles.Count == 0)
         {
             Console.WriteLine("Role not found.");
@@ -158,7 +168,7 @@ public class MembershipRepository
 
         try
         {
-            _repository.UpdateRow("User", new { Username = userNameIdentify },
+            db.UpdateRow("User", new { Username = userNameIdentify },
                 new
                 {
                     Username = userName,
@@ -168,7 +178,7 @@ public class MembershipRepository
 
             Console.WriteLine("User updated successfully.");
         }
-        catch(Exception ex)
+        catch (Exception ex)
         {
             Console.WriteLine($"Could not modify user.: {ex.Message}");
         }

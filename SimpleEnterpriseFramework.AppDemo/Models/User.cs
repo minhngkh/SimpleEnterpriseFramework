@@ -1,17 +1,18 @@
-using SEF.UI;
-using SEF.Repository;
+using SimpleEnterpriseFramework.Abstractions.App;
+using SimpleEnterpriseFramework.Abstractions.Data;
 
-public class User {
-#pragma warning disable 0414
+namespace SimpleEnterpriseFramework.AppDemo.Models;
+
+public class User : Model {
     public Int64? Id = null;
     public string username = "";
     public string email = "";
     public string? phone = null;
     public string password = "";
-#pragma warning restore 0414
+    
+    public override string TableName => "User";
 }
 
-public class UserForm : UIForm<User> {
-    public UserForm(IRepository repo): base(repo) {
-    }
+public class UserForm(IDatabaseDriver db) : Form<User>(db)
+{
 }

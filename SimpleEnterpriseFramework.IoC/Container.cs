@@ -132,6 +132,8 @@ public class Container : IContainer
         {
             // service = default;
             // return false;
+            
+            // Console.WriteLine("Service not registered");
 
             // Attempt to create instance for unregistered service as Transient
             return TryCreateInstance(serviceType, out service);
@@ -208,9 +210,9 @@ public class Container : IContainer
 
             return true;
         }
-        catch (Exception)
+        catch (Exception e)
         {
-            Console.WriteLine($"Should not be reachable - {implementationType}");
+            Console.WriteLine($"Should not be reachable: ${e}");
             instance = default;
             return false;
         }

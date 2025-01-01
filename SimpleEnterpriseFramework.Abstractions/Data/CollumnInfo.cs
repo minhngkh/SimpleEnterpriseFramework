@@ -1,4 +1,4 @@
-namespace SimpleEnterpriseFramework.Data;
+namespace SimpleEnterpriseFramework.Abstractions.Data;
 
 public struct ColumnInfo {
     public Int64 id;

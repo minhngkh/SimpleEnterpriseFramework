@@ -1,7 +1,7 @@
-using SimpleEnterpriseFramework.Data;
+using SimpleEnterpriseFramework.Abstractions.Data;
 using SimpleEnterpriseFramework.IoC;
 
-namespace SimpleEnterpriseFramework.App;
+namespace SimpleEnterpriseFramework.Abstractions.App;
 
 public abstract class CrudApp
 {
@@ -16,14 +16,14 @@ public abstract class CrudApp
         _container = new Container();
         _container.RegisterSingleton(db);
         
-        if (object.ReferenceEquals(db, _container.Resolve<IDatabaseDriver>()))
-        {
-            Console.WriteLine("Database driver registered successfully.");
-        }
-        else
-        {
-            Console.WriteLine("Database driver registration failed.");
-        }
+        // if (object.ReferenceEquals(db, _container.Resolve<IDatabaseDriver>()))
+        // {
+        //     Console.WriteLine("Database driver registered successfully.");
+        // }
+        // else
+        // {
+        //     Console.WriteLine("Database driver registration failed.");
+        // }
     }
     
     

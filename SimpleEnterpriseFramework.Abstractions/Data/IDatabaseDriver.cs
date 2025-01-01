@@ -1,4 +1,4 @@
-namespace SimpleEnterpriseFramework.Data;
+namespace SimpleEnterpriseFramework.Abstractions.Data;
 
 public interface IDatabaseDriver {
     public List<String> ListTables();
@@ -11,6 +11,10 @@ public interface IDatabaseDriver {
 
     // UpdateRow("User", "")
     public void UpdateRow(string table, string condition, string updateStatement);
+    
+    public void UpdateRow(string table, object? conditions, object updates);
+    
+    // TODO: Check what kind of magic is this
     public void UpdateRow(object? conditions, object updates);
 
     public void Add(string table, object values);

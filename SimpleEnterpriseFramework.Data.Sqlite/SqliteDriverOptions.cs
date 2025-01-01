@@ -1,5 +1,3 @@
-using SimpleEnterpriseFramework.IoC;
-
 namespace SimpleEnterpriseFramework.Data.Sqlite;
 
 public class SqliteDriverOptions

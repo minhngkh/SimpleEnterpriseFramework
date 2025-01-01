@@ -1,4 +1,4 @@
-namespace SimpleEnterpriseFramework.App;
+namespace SimpleEnterpriseFramework.Abstractions.App;
 
 public static class Helpers
 {

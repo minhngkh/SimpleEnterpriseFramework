@@ -1,9 +1,10 @@
-using SimpleEnterpriseFramework.App;
-using SimpleEnterpriseFramework.Data;
+using SimpleEnterpriseFramework.Abstractions.App;
+using SimpleEnterpriseFramework.Abstractions.Data;
 
 namespace SimpleEnterpriseFramework.AppDemo.Models;
 
-public class Product : Model {
+public class Product : Model
+{
     public Int64? Id = null;
     public string name = "";
     public double price = 0;

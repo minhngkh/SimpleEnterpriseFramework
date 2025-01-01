@@ -1,24 +1,23 @@
-using SEF.Repository;
-using SimpleEnterpriseFramework;
 using SimpleEnterpriseFramework.App.Web;
 using SimpleEnterpriseFramework.AppDemo.Models;
-using SimpleEnterpriseFramework.Data;
+using SimpleEnterpriseFramework.Core;
 using SimpleEnterpriseFramework.Data.Sqlite;
-using SimpleEnterpriseFramework.IoC;
 
-// var repo = new SqliteDriver("Data Source=test.db");
-var f = new Framework();
+var configuration = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
+var dbPath = configuration.GetValue<string>("DatabasePath");
+var port = configuration.GetValue<int>("Port");
+var key = configuration.GetValue<string>("SecretKey");
+
+var f = new Framework(options =>
+{
+    options.SecretKey = key!;
+});
 f.SetDatabaseDriver<SqliteDriver, SqliteDriverOptions>(options =>
 {
-    options.UsePath("test.db");
+    options.UsePath(dbPath!);
 });
-// var ui = container.Resolve<WebApp>();
 
 var ui = f.CreateCrudApp<WebApp>();
-// var ui = new WebApp();
 ui.Init();
-// ui.Register<User, UserForm>(new UserForm(repo));
-// ui.Register<Product, ProductForm>(new ProductForm(repo));
-
 ui.RegisterForm<Product, ProductForm>();
 ui.Start();

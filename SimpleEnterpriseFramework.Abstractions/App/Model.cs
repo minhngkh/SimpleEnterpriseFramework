@@ -1,4 +1,4 @@
-namespace SimpleEnterpriseFramework.App;
+namespace SimpleEnterpriseFramework.Abstractions.App;
 
 public abstract class Model
 {
