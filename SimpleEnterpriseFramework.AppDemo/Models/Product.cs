@@ -9,7 +9,7 @@ public class Product : Model {
     public double price = 0;
 
 
-    public override string TableName => "products";
+    public override string TableName => "Product";
 }
 
 public class ProductForm(IDatabaseDriver db) : Form<Product>(db);

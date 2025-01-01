@@ -15,7 +15,18 @@ public abstract class CrudApp
         Db = db;
         _container = new Container();
         _container.RegisterSingleton(db);
+        
+        if (object.ReferenceEquals(db, _container.Resolve<IDatabaseDriver>()))
+        {
+            Console.WriteLine("Database driver registered successfully.");
+        }
+        else
+        {
+            Console.WriteLine("Database driver registration failed.");
+        }
     }
+    
+    
     
     public void RegisterForm<TModel, TForm>()
         where TModel : Model, new()

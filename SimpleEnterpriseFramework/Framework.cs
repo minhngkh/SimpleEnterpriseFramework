@@ -1,3 +1,4 @@
+using SimpleEnterpriseFramework.App;
 using SimpleEnterpriseFramework.Data;
 using SimpleEnterpriseFramework.IoC;
 
@@ -5,18 +6,19 @@ namespace SimpleEnterpriseFramework;
 
 public class Framework
 {
-    private readonly Container _container;
+    private readonly Container _container = new();
 
     private Membership? _membership;
     public Membership Membership => _membership ??= _container.Resolve<Membership>();
 
-    public Framework(IDatabaseDriver db)
+    public void SetDatabaseDriver<TDriver, TOptions>(Action<TOptions> options) where TDriver : IDatabaseDriver
     {
-        _container = new Container();
-        _container.RegisterSingleton(db);
+        _container.RegisterSingleton<IDatabaseDriver, TDriver>();
+        _container.Configure(options);
+        
     }
 
-    public T CreateEditorApp<T>() where T : App.CrudApp
+    public T CreateCrudApp<T>() where T : CrudApp
     {
         return _container.Resolve<T>();
     }

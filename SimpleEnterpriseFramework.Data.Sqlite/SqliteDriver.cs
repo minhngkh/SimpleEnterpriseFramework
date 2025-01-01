@@ -7,18 +7,21 @@ namespace SimpleEnterpriseFramework.Data.Sqlite;
 
 public class SqliteDriver : IDatabaseDriver
 {
-    SqliteConnection connection;
+    private readonly SqliteDriverOptions _options;
 
-    public SqliteDriver(string connection)
+    private readonly SqliteConnection _connection;
+
+    public SqliteDriver(SqliteDriverOptions options)
     {
-        this.connection = new(connection);
-        this.connection.Open();
+        _options = options;
+        _connection = new SqliteConnection(_options.ConnectionString);
+        _connection.Open();
     }
 
     public List<string> ListTables()
     {
         List<string> result = new();
-        using (SqliteCommand command = connection.CreateCommand())
+        using (SqliteCommand command = _connection.CreateCommand())
         {
             command.CommandText =
                 @"SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%';";
@@ -38,7 +41,7 @@ public class SqliteDriver : IDatabaseDriver
     public List<ColumnInfo> ListColumns(string table)
     {
         List<ColumnInfo> result = new();
-        using (SqliteCommand command = connection.CreateCommand())
+        using (SqliteCommand command = _connection.CreateCommand())
         {
             command.CommandText = $"PRAGMA table_info('{table}')";
             using (SqliteDataReader reader = command.ExecuteReader())
@@ -76,7 +79,7 @@ public class SqliteDriver : IDatabaseDriver
             .ToArray();
         if (fields.Length == 0) return;
 
-        using (SqliteCommand command = connection.CreateCommand())
+        using (SqliteCommand command = _connection.CreateCommand())
         {
             if (deleteIfExist)
             {
@@ -132,7 +135,7 @@ public class SqliteDriver : IDatabaseDriver
 
     public void DeleteRow(string table, string condition)
     {
-        using (SqliteCommand command = connection.CreateCommand())
+        using (SqliteCommand command = _connection.CreateCommand())
         {
             command.CommandText = $"DELETE FROM {table} WHERE {condition};";
             command.ExecuteNonQuery();
@@ -142,7 +145,7 @@ public class SqliteDriver : IDatabaseDriver
     public void DeleteRow(string table, object conditions)
     {
         StringBuilder commandBuilder = new();
-        using (SqliteCommand command = connection.CreateCommand())
+        using (SqliteCommand command = _connection.CreateCommand())
         {
             commandBuilder.Append($"DELETE FROM {table} WHERE ");
             (string, object)[] conditionPairs = Utils.GetPairs(conditions);
@@ -170,7 +173,7 @@ public class SqliteDriver : IDatabaseDriver
 
     public void UpdateRow(string table, string condition, string updateStatement)
     {
-        using (SqliteCommand command = connection.CreateCommand())
+        using (SqliteCommand command = _connection.CreateCommand())
         {
             command.CommandText = $"UPDATE {table} SET {updateStatement} WHERE {condition}";
             command.ExecuteNonQuery();
@@ -180,7 +183,7 @@ public class SqliteDriver : IDatabaseDriver
     public void UpdateRow(object? conditions, object updates)
     {
         StringBuilder commandBuilder = new();
-        using (SqliteCommand command = connection.CreateCommand())
+        using (SqliteCommand command = _connection.CreateCommand())
         {
             commandBuilder.Append($"UPDATE {updates.GetType().Name}");
 
@@ -234,7 +237,7 @@ public class SqliteDriver : IDatabaseDriver
         StringBuilder valueBuilder = new();
         (string, object)[] valuePairs = Utils.GetPairs(values);
 
-        using (SqliteCommand command = connection.CreateCommand())
+        using (SqliteCommand command = _connection.CreateCommand())
         {
             for (int i = 0; i < valuePairs.Length; i++)
             {
@@ -274,7 +277,7 @@ public class SqliteDriver : IDatabaseDriver
 
         StringBuilder fieldBuilder = new();
         StringBuilder valueBuilder = new();
-        using (SqliteCommand command = connection.CreateCommand())
+        using (SqliteCommand command = _connection.CreateCommand())
         {
             for (int i = 0; i < valuePairs.Length; i++)
             {
@@ -325,7 +328,7 @@ public class SqliteDriver : IDatabaseDriver
     {
         List<Object[]> result = new();
         StringBuilder commandBuilder = new();
-        using (SqliteCommand command = connection.CreateCommand())
+        using (SqliteCommand command = _connection.CreateCommand())
         {
             commandBuilder.Append($"SELECT * FROM {table} ");
             if (conditions != null)
@@ -368,7 +371,7 @@ public class SqliteDriver : IDatabaseDriver
     {
         List<T> result = new();
         StringBuilder commandBuilder = new();
-        using (SqliteCommand command = connection.CreateCommand())
+        using (SqliteCommand command = _connection.CreateCommand())
         {
             commandBuilder.Append($"SELECT * FROM {typeof(T).Name} ");
             if (conditions != null)
@@ -410,7 +413,7 @@ public class SqliteDriver : IDatabaseDriver
     {
         object[]? result = null;
         StringBuilder commandBuilder = new();
-        using (SqliteCommand command = connection.CreateCommand())
+        using (SqliteCommand command = _connection.CreateCommand())
         {
             commandBuilder.Append($"SELECT * FROM {table} ");
             (string, object)[] conditionPairs = Utils.GetPairs(conditions);
@@ -456,7 +459,7 @@ public class SqliteDriver : IDatabaseDriver
     {
         T? result = null;
         StringBuilder commandBuilder = new();
-        using (SqliteCommand command = connection.CreateCommand())
+        using (SqliteCommand command = _connection.CreateCommand())
         {
             commandBuilder.Append($"SELECT * FROM {typeof(T).Name} ");
             (string, object)[] conditionPairs = Utils.GetPairs(conditions);
@@ -498,7 +501,7 @@ public class SqliteDriver : IDatabaseDriver
 
     private int GenerateNewId(string table)
     {
-        using (SqliteCommand command = connection.CreateCommand())
+        using (SqliteCommand command = _connection.CreateCommand())
         {
             command.CommandText = $"SELECT MAX(Id) FROM {table}";
             object result = command.ExecuteScalar() ?? 1;
@@ -510,7 +513,7 @@ public class SqliteDriver : IDatabaseDriver
 
     public string GetPrimaryColumn(string table)
     {
-        using (SqliteCommand command = connection.CreateCommand())
+        using (SqliteCommand command = _connection.CreateCommand())
         {
             command.CommandText =
                 $"SELECT l.name FROM pragma_table_info(@table) as l WHERE l.pk = 1;";

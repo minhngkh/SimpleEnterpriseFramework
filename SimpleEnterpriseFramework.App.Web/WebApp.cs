@@ -8,14 +8,17 @@ using SimpleEnterpriseFramework.Data;
 namespace SimpleEnterpriseFramework.App.Web;
 
 public class WebApp: CrudApp {
+    private WebAppOptions _options;
+    
     string outputDirectory;
 
     WebApplication app;
     List<string> tableNames;
     HandlebarsTemplate<object, object> tableTemplate;
 
-    public WebApp(IDatabaseDriver db) : base(db)
+    public WebApp(IDatabaseDriver db, WebAppOptions options) : base(db)
     {
+        _options = options;
         this.app = WebApplication.Create([]);
         this.outputDirectory = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!;
         string tableTemplatePath = Path.Combine(outputDirectory, "UI", "Templates", "table.hbs");
@@ -128,7 +131,7 @@ public class WebApp: CrudApp {
                 tableNames = tableNames,
             });
         });
-        app.Run();
+        app.Run($"http://localhost:{_options.Port}");
     }
 
     class PatchData<T> where T: class {

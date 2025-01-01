@@ -32,6 +32,7 @@ public abstract class Form<T>(IDatabaseDriver db)
         return db.ListColumns(TableName);
     }
 
+    // TODO: update this table name
     public List<T> GetAllData()
     {
         return db.Find<T>();

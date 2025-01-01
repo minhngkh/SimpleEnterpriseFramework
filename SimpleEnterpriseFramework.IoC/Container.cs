@@ -6,6 +6,8 @@ namespace SimpleEnterpriseFramework.IoC;
 
 public interface IContainer
 {
+    void Configure<TService>(Action<TService> configure);
+    
     void Register<TService, TImplementation>()
         where TImplementation : TService;
 
@@ -27,7 +29,12 @@ public class Container : IContainer
 {
     private readonly Dictionary<Type, ServiceDescriptor> _services = new();
     private readonly SingletonStore _singletonStore = new();
+    private readonly Dictionary<Type, object> _configureActions = new();
 
+    public void Configure<TService>(Action<TService> configure)
+    {
+        _configureActions[typeof(TService)] = configure;
+    }
 
     public void Register<TService, TImplementation>()
         where TImplementation : TService
@@ -90,7 +97,7 @@ public class Container : IContainer
         if (!TryResolve<TService>(out var service))
         {
             throw new InvalidOperationException(
-                $"Service of type {typeof(TService)} not found.");
+                $"Unable to resolve service of type {typeof(TService)}.");
         }
 
         return service;
@@ -101,7 +108,7 @@ public class Container : IContainer
         if (!TryResolve(serviceType, out var service))
         {
             throw new InvalidOperationException(
-                $"Service of type {serviceType} not found.");
+                $"Unable to resolve service of type {serviceType}.");
         }
 
         return service;
@@ -155,38 +162,57 @@ public class Container : IContainer
     }
 
     // TODO: Implement factory registration
-    private bool TryCreateInstance(Type implementationType,
+    private bool TryCreateInstance(
+        Type implementationType,
         [MaybeNullWhen(false)] out object instance)
     {
-        var constructor = implementationType.GetConstructors()
-            .FirstOrDefault(c =>
-                c.GetCustomAttributes<ConstructorInjectionAttribute>().Any()
-            );
-
-        constructor ??= implementationType.GetConstructors().FirstOrDefault();
-
-        var parameters = constructor?.GetParameters()
-            .Select(param => Resolve(param.ParameterType))
-            .ToArray();
-
-        instance = Activator.CreateInstance(implementationType, parameters);
-        if (instance is null)
+        try
         {
+            var constructor = implementationType.GetConstructors()
+                .SingleOrDefault(c =>
+                    c.GetCustomAttributes<ConstructorInjectionAttribute>().Any()
+                );
+            
+            // Fallback constructor
+            constructor ??= implementationType.GetConstructors().FirstOrDefault();
+
+            var parameters = constructor?.GetParameters()
+                .Select(param => Resolve(param.ParameterType))
+                .ToArray();
+
+            instance = Activator.CreateInstance(implementationType, parameters);
+            if (instance is null)
+            {
+                return false;
+            }
+
+            // Apply configuration actions to instance
+            if (_configureActions.TryGetValue(implementationType, out var action))
+            {
+                var actionType = typeof(Action<>).MakeGenericType(implementationType);
+                var invokeMethod = actionType.GetMethod("Invoke");
+                invokeMethod?.Invoke(action, [instance]);
+            }
+
+            foreach (var property in implementationType
+                         .GetProperties(BindingFlags.Public | BindingFlags.NonPublic |
+                                        BindingFlags.Instance)
+                         .Where(p =>
+                             p.CanWrite &&
+                             p.GetCustomAttributes<PropertyInjectionAttribute>().Any()
+                         ))
+            {
+                var propertyValue = Resolve(property.PropertyType);
+                property.SetValue(instance, propertyValue);
+            }
+
+            return true;
+        }
+        catch (Exception)
+        {
+            Console.WriteLine($"Should not be reachable - {implementationType}");
+            instance = default;
             return false;
         }
-
-        foreach (var property in implementationType
-                     .GetProperties(BindingFlags.Public | BindingFlags.NonPublic |
-                                    BindingFlags.Instance)
-                     .Where(p =>
-                         p.CanWrite &&
-                         p.GetCustomAttributes<PropertyInjectionAttribute>().Any()
-                     ))
-        {
-            var propertyValue = Resolve(property.PropertyType);
-            property.SetValue(instance, propertyValue);
-        }
-
-        return true;
     }
 }
