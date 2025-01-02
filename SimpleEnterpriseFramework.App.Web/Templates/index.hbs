@@ -84,7 +84,7 @@ td.disabled {
 <body>
     <div class="database">
         <div style="flex-grow: 0; flex-basis: 6em;">
-            <button class="logout-button" onclick="onClickLogout">Logout</button>
+            <button class="logout-button" onclick="(() => onClickLogout())();return false;">Logout</button>
             <div class="tables-navigation">
                 <h3 class="header">Tables</h3>
                 <ul>
