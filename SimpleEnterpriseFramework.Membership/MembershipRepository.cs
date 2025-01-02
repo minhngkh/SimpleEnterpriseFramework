@@ -166,13 +166,20 @@ public class MembershipRepository(IDatabaseDriver db)
         }
     }
 
-    public User? GetUserByUsername(string username)
+    public (User?, Role?) GetUserByUsername(string username)
     {
         var user = db.First(
             new User { Username = username },
             ["Username"]
         );
-
-        return user;
+        if (user != null && user.RoleId != null) {
+            var role = db.First(
+                new Role { Id = user.RoleId ?? 0 },
+                ["Id"]
+            );
+            return (user, role);
+        } else {
+            return (user, null);
+        }
     }
 }

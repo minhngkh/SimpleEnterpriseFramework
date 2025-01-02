@@ -41,23 +41,28 @@ public class Membership : IMembership
         throw new NotImplementedException();
     }
 
-    public bool IsLoggedIn(string token)
+    public bool IsLoggedInAsRole(string token, string role)
     {
-        return !_tokenBlacklist.Contains(token);
+        var handler = new JwtSecurityTokenHandler();
+        var jwtSecurityToken = handler.ReadJwtToken(token);
+        var jwtRole = jwtSecurityToken.Claims.First(claim => claim.Type == "user_role").Value;
+        if (jwtRole == role) return true;
+        return false;
     }
 
     public bool Login(string username, string password,
-        [MaybeNullWhen(false)] out string token)
+        [MaybeNullWhen(false)] out string token, out string? roleName)
     {
         try
         {
-            var user = _repo.GetUserByUsername(username);
+            var (user, role) = _repo.GetUserByUsername(username);
 
             // user not found or password is incorrect
             if (user == null)
             {
                 Console.WriteLine("User not found.");
                 token = default;
+                roleName = default;
                 return false;
             }
             
@@ -67,16 +72,19 @@ public class Membership : IMembership
             {
                 Console.WriteLine("Password is incorrect.");
                 token = default;
+                roleName = default;
                 return false;
             }
 
-            token = GenerateToken(username, user.RoleId);
+            token = GenerateToken(username, role?.Name);
+            roleName = role?.Name;
             return true;
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Login error: {ex}");
             token = default;
+            roleName = default;
             return false;
         }
     }
@@ -116,7 +124,7 @@ public class Membership : IMembership
         _tokenBlacklist.Add(token);
     }
 
-    private string GenerateToken(string username, long? roleId)
+    private string GenerateToken(string username, string? role)
     {
         var securityKey =
             new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_options.SecretKey));
@@ -126,7 +134,7 @@ public class Membership : IMembership
         var claims = new[]
         {
             new Claim("user_username", username),
-            new Claim("user_roleId", roleId.ToString() ?? ""),
+            new Claim("user_role", role ?? ""),
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
         };
 

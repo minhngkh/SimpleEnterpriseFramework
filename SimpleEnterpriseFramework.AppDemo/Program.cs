@@ -44,7 +44,9 @@ f.SetDatabaseDriver<SqliteDriver, SqliteDriverOptions>(options =>
 var membership = f.Membership;
 // // m.Setup(true);
 membership.Setup(true);
-membership.Register("minhngkh@gmail.com", "minh134");
+membership.Register("minhngkh@gmail.com", "minh134", "admin");
+membership.Register("tuong@gmail.com", "tuong", "admin");
+membership.Register("user@gmail.com", "user", "user");
 // var result2 = m.Login("minhngkh@gmail.com", "minh134", out var token);
 // Console.WriteLine(result2 + ": " + token);
 // m.Setup();
@@ -69,7 +71,7 @@ ui.App.Use((context, next) =>
     
     if (context.Request.Cookies.TryGetValue("token", out var token))
     {
-        if (membership.IsLoggedIn(token))
+        if (membership.IsLoggedInAsRole(token, "admin"))
         {
             return next(context);
         }
@@ -109,8 +111,8 @@ ui.App.MapPost("/login", async (HttpContext context) =>
     }
 
     var result =
-        membership.Login(username, password, out var token);
-    if (!result)
+        membership.Login(username, password, out var token, out var role);
+    if (!result || role != "admin")
     {
         return Results.Unauthorized();
     }
