@@ -1,3 +1,4 @@
+using HandlebarsDotNet;
 using SimpleEnterpriseFramework.App.Web;
 using SimpleEnterpriseFramework.AppDemo.Models;
 using SimpleEnterpriseFramework.Core;
@@ -40,9 +41,9 @@ f.SetDatabaseDriver<SqliteDriver, SqliteDriverOptions>(options =>
 });
 
 
-var m = f.Membership;
+var membership = f.Membership;
 // // m.Setup(true);
-// var result = m.Register("minhngkh@gmail.com", "minh134");
+membership.Register("minhngkh@gmail.com", "minh134");
 // var result2 = m.Login("minhngkh@gmail.com", "minh134", out var token);
 // Console.WriteLine(result2 + ": " + token);
 // m.Setup();
@@ -50,6 +51,79 @@ var m = f.Membership;
 
 var ui = f.CreateCrudApp<WebApp>();
 ui.Init();
+
+//Login template
+var loginTemplatePath =
+    Path.Combine(Directory.GetCurrentDirectory(), "Templates", "login.hbs");
+var loginTemplate = File.ReadAllText(loginTemplatePath);
+var loginPage = Handlebars.Compile(loginTemplate);
+
+ui.App.Use((context, next) =>
+{
+    if (context.Request.Path == "/login")
+    {
+        return next(context);
+    }
+    
+    if (context.Request.Cookies.TryGetValue("token", out var token))
+    {
+        if (membership.IsLoggedIn(token))
+        {
+            return next(context);
+        }
+    }
+    context.Response.Cookies.Delete("token");
+    context.Response.Redirect("/login");
+    return Task.CompletedTask;
+});
+
+ui.App.MapGet("/login", (HttpContext context) =>
+{
+    context.Response.ContentType = "text/html";
+    var renderedLogin = loginPage(null);
+    return Results.Text(renderedLogin, "text/html");
+});
+
+ui.App.MapPost("/register", (string username, string password) =>
+{
+    var success = membership.Register(username, password);
+    if (!success)
+    {
+        return Results.BadRequest("Username already exists.");
+    }
+
+    return Results.Ok("User registered successfully.");
+});
+
+ui.App.MapPost("/login", async (HttpContext context) =>
+{
+    var res1 = context.Request.Form.TryGetValue("username", out var username);
+    var res2 = context.Request.Form.TryGetValue("password", out var password);
+    // var loginRequest = await context.Request.ReadFromJsonAsync<LoginRequest>();
+
+    if (!res1 || !res2)
+    {
+        return Results.BadRequest("Invalid request payload.");
+    }
+
+    var result =
+        membership.Login(username, password, out var token);
+    if (!result)
+    {
+        return Results.Unauthorized();
+    }
+
+    return Results.Ok(new { Token = token });
+});
+
+ui.App.MapPost("/logout", (string token) =>
+{
+    membership.Logout(token);
+    return Results.Ok("Logged out successfully.");
+});
+
 ui.RegisterForm<Product, ProductForm>();
 ui.RegisterForm<User, UserForm>();
+
+
 ui.Start();

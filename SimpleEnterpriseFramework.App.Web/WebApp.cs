@@ -12,6 +12,9 @@ namespace SimpleEnterpriseFramework.App.Web;
 
 public class WebApp : CrudApp
 {
+    public WebApplication App => app;
+    
+    
     private WebAppOptions _options;
     private IHandlebars _hbs;
 
