@@ -81,6 +81,19 @@ ui.App.Use((context, next) =>
     return Task.CompletedTask;
 });
 
+ui.App.MapGet("/logout", (HttpContext context) =>
+{
+    string? token = context.Request.Query["token"].ToString();
+    if (token == null) {
+        return Results.BadRequest("Missing token");
+    } else {
+        membership.Logout(token);
+        context.Response.Cookies.Delete("token");
+        return Results.Ok("Logged out successfully.");
+    }
+});
+
+
 ui.App.MapGet("/login", (HttpContext context) =>
 {
     context.Response.ContentType = "text/html";
@@ -118,12 +131,6 @@ ui.App.MapPost("/login", async (HttpContext context) =>
     }
 
     return Results.Ok(new { Token = token });
-});
-
-ui.App.MapPost("/logout", (string token) =>
-{
-    membership.Logout(token);
-    return Results.Ok("Logged out successfully.");
 });
 
 ui.RegisterForm<Product, ProductForm>();
