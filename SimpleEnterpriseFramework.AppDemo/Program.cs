@@ -49,6 +49,8 @@ membership.Register("minhngkh@gmail.com", "minh134");
 // m.Setup();
 //
 
+membership.Setup(true);
+
 var ui = f.CreateCrudApp<WebApp>();
 ui.Init();
 
