@@ -1,9 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-    <ItemGroup>
-      <ProjectReference Include="..\SimpleEnterpriseFramework.Core\SimpleEnterpriseFramework.Core.csproj" />
-    </ItemGroup>
-
     <PropertyGroup>
         <OutputType>Exe</OutputType>
         <TargetFramework>net9.0</TargetFramework>
@@ -13,7 +9,8 @@
 
     <ItemGroup>
       <PackageReference Include="Handlebars.Net" Version="2.1.6" />
-      <ProjectReference Include="..\SimpleEnterpriseFramework.Core\SimpleEnterpriseFramework.Core.csproj" />
+      <ProjectReference Include="..\SimpleEnterpriseFramework.Abstractions\SimpleEnterpriseFramework.Abstractions.csproj" />
+      <ProjectReference Include="..\SimpleEnterpriseFramework.Data.Sqlite\SimpleEnterpriseFramework.Data.Sqlite.csproj" />
       <PackageReference Include="Microsoft.Data.Sqlite" Version="9.0.0" />
     </ItemGroup>
 </Project>

@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+    <PropertyGroup>
+        <TargetFramework>net9.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.0" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="{{frameworkPath}}\SimpleEnterpriseFramework.App.Web\SimpleEnterpriseFramework.App.Web.csproj" />
+      <ProjectReference Include="{{frameworkPath}}\SimpleEnterpriseFramework.Core\SimpleEnterpriseFramework.Core.csproj" />
+      <ProjectReference Include="{{frameworkPath}}\SimpleEnterpriseFramework.Data.Sqlite\SimpleEnterpriseFramework.Data.Sqlite.csproj" />
+    </ItemGroup>
+
+</Project>

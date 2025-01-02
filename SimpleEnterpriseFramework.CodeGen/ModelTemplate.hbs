@@ -1,0 +1,17 @@
+using SimpleEnterpriseFramework.Abstractions.App;
+using SimpleEnterpriseFramework.Abstractions.Data;
+using SimpleEnterpriseFramework.Data.Sqlite;
+
+namespace {{projectName}}.Models;
+
+public class {{modelName}} : Model {
+    {{#each columnsInfo}}
+    [SqliteProperty("{{this.type}}", "{{this.name}}", IsKey = {{convertBoolean this.isPrimaryKey}}, Nullable = {{convertBoolean this.nullable}})]
+    public {{convertType this.type}}{{#if this.nullable}}?{{/if}} {{this.name}} { get; set; }
+    {{/each}}
+    public override string TableName => "{{modelName}}";
+}
+
+public class {{modelName}}Form(IDatabaseDriver db) : Form<{{modelName}}>(db)
+{
+}
